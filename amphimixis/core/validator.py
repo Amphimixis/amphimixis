@@ -96,7 +96,10 @@ def _is_valid_platform(platform: dict[str, int | str]):
 
     arch = platform.get("arch")
     if not isinstance(arch, str) or arch.lower() not in Arch:
-        _notify_about_error(f"Invalid `arch` in platform {pl_id}: {arch}")
+        supported_archs = ", ".join(arch.value for arch in Arch)
+        _notify_about_error(
+            f"Invalid arch in platform {pl_id}: {arch}. Supported: {supported_archs}"
+        )
 
     address = platform.get("address")
     if address is not None:
