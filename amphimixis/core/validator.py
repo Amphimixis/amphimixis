@@ -118,6 +118,10 @@ def _is_valid_platform(platform: dict[str, int | str]):
     if not isinstance(port, int) or not 1 <= port <= 65535:
         _notify_about_error(f"Invalid `port` in platform {pl_id}: {port}")
 
+    events = platform.get("events")
+    if not isinstance(events, list | str | None):
+        _notify_about_error(f"Invalid events in platform {pl_id}: {events}")
+
 
 def _is_valid_recipe(recipe: dict[str, int | str]):
     """Check whether recipe is valid."""

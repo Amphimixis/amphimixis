@@ -26,6 +26,7 @@ _SYSROOT = "sysroot"
 _ADDRESS = "address"
 _PORT = "port"
 _ARCH = "arch"
+_EVENTS = "events"
 _AUTH = "auth"
 _USERNAME = "username"
 _PASSWORD = "password"
@@ -104,6 +105,7 @@ class LaboratoryAssistant:
                 Arch(machine[_ARCH]),
                 machine.get(_ADDRESS, None),
                 auth,
+                machine.get(_EVENTS, None),
             )
         return None
 

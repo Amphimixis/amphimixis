@@ -150,7 +150,7 @@ def _create_build(  # pylint: disable=too-many-branches, too-many-arguments, too
 
     toolchain = None
     if toolchain_info := recipe_info.get("toolchain"):
-        toolchain = create_toolchain(toolchain_info)
+        toolchain = create_toolchain(toolchain_info)  # type: ignore[arg-type]
 
     sysroot = recipe_info.get("sysroot")
     if sysroot is None and toolchain is not None:
@@ -183,7 +183,7 @@ def _create_build(  # pylint: disable=too-many-branches, too-many-arguments, too
 
 def _apply_platform_overrides(
     machine: MachineInfo,
-    platform_cfg: dict[str, int | str],
+    platform_cfg: dict[str, int | str | list[str]],
 ) -> None:
     """Temporary override some global machine info by local info.
 
@@ -194,6 +194,10 @@ def _apply_platform_overrides(
     arch = platform_cfg.get("arch")
     if arch:
         machine.arch = general.Arch(str(arch).lower())
+
+    events = platform_cfg.get("events")
+    if events:
+        machine.events = events.split() if isinstance(events, str) else events  # type: ignore[assignment] #pylint: disable=line-too-long
 
     address = platform_cfg.get("address")
     username = platform_cfg.get("username")
@@ -206,7 +210,7 @@ def _apply_platform_overrides(
         if password:
             machine.auth.password = str(password)
         if port:
-            machine.auth.port = int(port)
+            machine.auth.port = int(port)  # type: ignore[arg-type]
     elif username and port:
         machine.auth = general.MachineAuthenticationInfo(
             str(username),
@@ -232,8 +236,8 @@ def _generate_build_name(build_id: str, run_id: str, recipe_id: str) -> str:
 
 
 def _get_by_id(
-    items: list[dict[str, str | int]], target_id: str
-) -> dict[str, str | int]:
+    items: list[dict[str, str | int | list[str]]], target_id: str
+) -> dict[str, str | int | list[str]]:
     """Find an item in a dictionary by ID."""
     for item in items:
         id_ = str(item["id"])
@@ -334,22 +338,26 @@ def _get_analyzed_build_system() -> str | None:
     return None
 
 
-def create_machine(machine_info: dict[str, int | str]) -> general.MachineInfo:
+def create_machine(
+    machine_info: dict[str, int | str | list[str]],
+) -> general.MachineInfo:
     """Create a new machine."""
+    auth = None
     arch = str(machine_info.get("arch"))
     address = machine_info.get("address")
     address = str(address) if address is not None else None
-    auth = None
+    events = machine_info.get("events")
+    events = (events.split() if isinstance(events, str) else events) or None
 
     if address is not None:
         username = str(machine_info.get("username"))
         password = machine_info.get("password")
         password = str(password) if password is not None else None
-        port = int(machine_info.get("port", DEFAULT_PORT))
+        port = int(machine_info.get("port", DEFAULT_PORT))  # type: ignore[arg-type]
 
         auth = general.MachineAuthenticationInfo(username, password, port)
 
-    machine = general.MachineInfo(general.Arch(arch.lower()), address, auth)
+    machine = general.MachineInfo(general.Arch(arch.lower()), address, auth, events)  # type: ignore[arg-type] # pylint: disable=line-too-long
 
     return machine
 
