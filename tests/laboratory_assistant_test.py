@@ -94,9 +94,7 @@ class TestLaboratoryAssistant:
 
         # construct new platform
         machine = MachineInfo(
-            arch,
-            address,
-            MachineAuthenticationInfo(username, password, port),
+            arch, address, MachineAuthenticationInfo(username, password, port), None
         )
 
         # add platform to toolbox via LaboratoryAssistant
@@ -116,7 +114,14 @@ class TestLaboratoryAssistant:
         "build_machine",
         [
             MachineInfo(
-                Arch.X86, "172.219.91.1", MachineAuthenticationInfo("bzych", None, 22)
+                Arch.X86,
+                "172.219.91.1",
+                MachineAuthenticationInfo(
+                    "bzych",
+                    None,
+                    22,
+                ),
+                None,
             )
         ],
     )
@@ -178,6 +183,7 @@ class TestLaboratoryAssistant:
             Arch.X86,
             platform_address,
             MachineAuthenticationInfo("bzych", "best-passwd", 8000),
+            None,
         )
 
         # add platform to toolbox via LaboratoryAssistant
@@ -202,6 +208,7 @@ class TestLaboratoryAssistant:
             Arch.X86,
             platform_address,
             MachineAuthenticationInfo("bzych", "best-passwd", 8000),
+            None,
         )
 
         # add platform to toolbox via LaboratoryAssistant

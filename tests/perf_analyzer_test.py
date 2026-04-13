@@ -89,8 +89,8 @@ def test_serialize_stats_converts_perf_stat_to_dicts() -> None:
 def get_stats_profiler(mocker: pytest_mock.MockerFixture, tmp_path: Path):
     def _profiler(project_name: str = "myproj") -> Profiler:
         build = Build(
-            MachineInfo(Arch.X86, None, None),
-            MachineInfo(Arch.X86, None, None),
+            MachineInfo(Arch.X86, None, None, None),
+            MachineInfo(Arch.X86, None, None, None),
             "test_build",
             ["a.out"],
             None,

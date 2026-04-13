@@ -44,8 +44,8 @@ def test_between_configurator_and_builder(
     config_file = working_dir / "input.yaml"
 
     build = general.Build(
-        general.MachineInfo(general.Arch.X86, None, None),
-        general.MachineInfo(general.Arch.X86, None, None),
+        general.MachineInfo(general.Arch.X86, None, None, None),
+        general.MachineInfo(general.Arch.X86, None, None, None),
         "test_build",
         [NAME_EXECUTABLE_FILE],
         None,
