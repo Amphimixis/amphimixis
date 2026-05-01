@@ -88,8 +88,10 @@ def validate(config_file_path: str, ui: IUI = NULL_UI) -> bool:
     return _errors_count == 0
 
 
-def _is_valid_platform(platform: dict[str, int | str]):
-    """Check whether plafrom is valid."""
+# pylint: disable = R0912
+def _is_valid_platform(platform: dict[str, Any]):
+    """Function to check whether platform is valid"""
+
     pl_id = platform.get("id")
     if not isinstance(pl_id, int | str):
         _notify_about_error(f"Invalid `id` in platform: {pl_id}")
@@ -114,6 +116,71 @@ def _is_valid_platform(platform: dict[str, int | str]):
     port = platform.get("port", DEFAULT_PORT)
     if not isinstance(port, int) or not 1 <= port <= 65535:
         _notify_about_error(f"Invalid `port` in platform {pl_id}: {port}")
+
+    qemu = platform.get("qemu")
+
+    if qemu is None:
+        pass
+    elif isinstance(qemu, bool):
+        if qemu:
+            # qemu: true - validate address is 127.0.0.1 if specified
+            address = platform.get("address")
+            if address is not None and address != "127.0.0.1":
+                _notify_about_error(
+                    f"Platform {pl_id} address must be 127.0.0.1 when qemu is enabled."
+                )
+        # qemu: false - just skip, no error
+    elif not qemu:
+        _notify_about_error(f"Qemu configuration is empty or invalid: {qemu}")
+    else:
+        pl_id_str = str(pl_id) if pl_id is not None else "unknown"
+        _is_valid_qemu(pl_id_str, qemu)
+
+
+def _is_valid_qemu(pl_id: int | str | None, qemu: dict[str, int | str]) -> None:
+    """Function to check whether QEMU configuration is valid."""
+
+    if not isinstance(qemu, dict):
+        _notify_about_error(
+            f"Invalid qemu in platform {pl_id}: expected dict, got {type(qemu).__name__}"
+        )
+        return
+
+    machine = qemu.get("machine")
+    if not isinstance(machine, str | None):
+        _notify_about_error(f"Invalid qemu.machine in platform {pl_id}: {machine}")
+
+    cpu = qemu.get("cpu")
+    if not isinstance(cpu, str | None):
+        _notify_about_error(f"Invalid qemu.cpu in platform {pl_id}: {cpu}")
+
+    memory_gb = qemu.get("memory_gb")
+    if memory_gb is not None and (not isinstance(memory_gb, int) or memory_gb <= 0):
+        _notify_about_error(f"Invalid qemu.memory_gb in platform {pl_id}: {memory_gb}")
+
+    smp = qemu.get("smp")
+    if smp is not None and (not isinstance(smp, int) or smp <= 0):
+        _notify_about_error(f"Invalid qemu.smp in platform {pl_id}: {smp}")
+
+    kernel = qemu.get("kernel")
+    if not isinstance(kernel, str | None):
+        _notify_about_error(f"Invalid qemu.kernel in platform {pl_id}: {kernel}")
+
+    initrd = qemu.get("initrd")
+    if not isinstance(initrd, str | None):
+        _notify_about_error(f"Invalid qemu.initrd in platform {pl_id}: {initrd}")
+
+    disk_image = qemu.get("disk_image")
+    if not isinstance(disk_image, str | None):
+        _notify_about_error(
+            f"Invalid qemu.disk_image in platform {pl_id}: {disk_image}"
+        )
+
+    keep_alive = qemu.get("keep_alive")
+    if keep_alive is not None and not isinstance(keep_alive, bool):
+        _notify_about_error(
+            f"Invalid qemu.keep_alive in platform {pl_id}: {keep_alive}"
+        )
 
 
 def _is_valid_recipe(recipe: dict[str, int | str]):

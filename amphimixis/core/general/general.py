@@ -6,6 +6,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import StrEnum
 from os.path import isabs
+from pathlib import Path
+from typing import Optional
 
 
 class Arch(StrEnum):
@@ -73,18 +75,47 @@ class MachineAuthenticationInfo:
 
 
 @dataclass
+class QemuConfig:
+    """QEMU virtual machine configuration for remote architecture provisioning.
+
+    :var str machine: QEMU machine type (e.g., "virt" for RISC-V).
+    :var str | None cpu: CPU model (e.g., "rv64" for RISC-V).
+        If None, defaults to arch-specific value.
+    :var int memory_gb: Memory size in GB.
+    :var int smp: Number of SMP processors.
+    :var Path | None kernel: Path to kernel image.
+    :var Path | None initrd: Path to initrd image.
+    :var Path | None disk_image: Path to qcow2 disk image.
+    :var bool keep_alive: If True, do not delete VM after run completes.
+    """
+
+    machine: str = "virt"
+    cpu: Optional[str] = None
+    memory: int = 4
+    smp: int = 4
+    kernel: Optional[Path] = None
+    initrd: Optional[Path] = None
+    disk_image: Optional[Path] = None
+    keep_alive: bool = False
+
+
+@dataclass
 class MachineInfo:
     """Information about the machine.
 
     :var Arch arch: Architecture of the machine.
     :var str | None address: IP address or hostname of the remote machine.
         If address is None, the machine is considered to be local.
+
     :var MachineAuthenticationInfo auth: Authentication info for the machine.
+
+    :var QemuConfig | None qemu: QEMU configuration if VM provisioning is enabled.
     """
 
     arch: Arch
     address: str | None
     auth: MachineAuthenticationInfo | None
+    qemu: QemuConfig | None = None
 
     @property
     def __dictstr__(self) -> dict:

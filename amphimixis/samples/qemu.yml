@@ -1,0 +1,48 @@
+# QEMU virtual machine provisioning for foreign architecture profiling
+#
+# This configuration provisions a RISC-V VM using QEMU for building and
+# profiling projects on architectures not natively available.
+#
+# QEMU option supports 3 ways to specify files:
+# 1. qemu: true - Auto-download defaults for arch (RISC-V only for now)
+# 2. qemu: { disk_image: /path/to/disk } - Use custom disk, auto-download kernel/initrd
+# 3. qemu: { kernel: ..., initrd: ..., disk_image: ... } - Use all custom files
+#
+# Note: When qemu is enabled, address is fixed to 127.0.0.1 (local VM)
+
+platforms:
+- id: 1
+  arch: riscv
+  username: root
+  password: root
+  port: 2222
+  qemu: true
+
+- id: 2
+  arch: riscv
+  username: root
+  password: root
+  port: 2222
+  qemu:
+    machine: virt
+    cpu: rv64
+    memory_gb: 4
+    smp: 4
+    kernel: /path/to/kernel
+    initrd: /path/to/initrd
+    disk_image: /path/to/disk_image
+    keep_alive: true # By default: false
+
+recipes:
+- id: 1
+  config_flags: "-DCMAKE_BUILD_TYPE=Release"
+  toolchain:
+    cxx_compiler: "/usr/bin/g++"
+
+builds:
+- build_machine: 1
+  run_machine: 1
+  recipe_id: 1
+- build_machine: 2
+  run_machine: 2
+  recipe_id: 1

@@ -17,6 +17,7 @@ from amphimixis.core.general.general import (
     ProfileStats,
     Project,
     ProjectStats,
+    QemuConfig,
     Toolchain,
     ToolchainAttrs,
 )
@@ -30,6 +31,7 @@ __all__ = [
     "IHighLevelBuildSystem",
     "ILowLevelBuildSystem",
     "MachineAuthenticationInfo",
+    "QemuConfig",
     "constants",
     "tools",
     "MachineInfo",

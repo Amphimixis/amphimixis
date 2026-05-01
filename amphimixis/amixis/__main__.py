@@ -8,7 +8,7 @@ from pathlib import Path
 from amphimixis.amixis.commands import COMMANDS
 from amphimixis.amixis.console_animation_printer import ConsoleAnimationPrinter
 from amphimixis.amixis.parser import MAIN_EXAMPLES, create_parser
-from amphimixis.core import general
+from amphimixis.core import cleanup_qemu_machines, general
 from amphimixis.core.general.constants import DEFAULT_CONFIG_PATH
 
 
@@ -105,4 +105,8 @@ def main() -> bool:
 
 
 if __name__ == "__main__":
-    sys.exit(0 if main() else 1)
+    try:
+        success = main()
+    finally:
+        cleanup_qemu_machines()
+    sys.exit(0 if success else 1)
