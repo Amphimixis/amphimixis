@@ -5,6 +5,7 @@ from amphimixis.core.analyzer import analyze
 from amphimixis.core.build_systems import build_systems_dict
 from amphimixis.core.builder import Builder
 from amphimixis.core.configurator import (
+    cleanup_qemu_machines,
     create_flags,
     create_machine,
     create_toolchain,
@@ -20,6 +21,7 @@ __all__ = [
     "general",
     "build_systems_dict",
     "analyze",
+    "cleanup_qemu_machines",
     "create_flags",
     "create_machine",
     "create_toolchain",
