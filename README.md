@@ -10,6 +10,8 @@
 
 Amphimixis is an automated project intelligence and evaluation tool for performance and migration readiness. It helps inspect a project for existing infrastructure such as CI, tests, benchmarks, dependencies, and build scripts, then runs builds and collects performance data for further comparison.
 
+Amphimixis simplifies migration readiness exploration and performance analysis by partially implementing our [methodology](docs/migration-readiness-exploring-methodology.md).
+
 > Amphimixis uses `perf` for profiling, makes cross-table with two builds per CPU event for comparison.
 
 <p align="center">
@@ -81,9 +83,9 @@ amixis run /path/to/project
 This command:
 
 1. analyzes the project
-1. builds it using the selected configuration
-1. profiles the resulting executables
-1. prints profiling results in the console
+2. builds it using the selected configuration
+3. profiles the resulting executables
+4. prints profiling results in the console
 
 To compare two collected `perf` outputs:
 
