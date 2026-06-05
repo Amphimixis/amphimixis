@@ -14,7 +14,7 @@
    - presence of vectorization macros and other platform-dependent macros in the code; verify their semantics — macro names can sometimes be misleading
    - assess dependencies:
       - dependency count
-      - for each dependency evaluate its migration readiness status in database; if projects is missing, issue a warning
+      - for each dependency check its migration readiness status in database (any resource that contains information about project portability); if project is missing, add the issue in the report, evaluate the portability of this dependency on explored architecture and release your result in the database and report
       - summarize over all dependencies
 
 3. To evaluate package behavior on the explored architecture, build and verify it on the main platform where the project is distributing  (typically x86):
@@ -30,6 +30,7 @@
       - Set highest priority (`nice -n -20 <your_executable>` on Linux, requires root)
       - Turn off CPU Turbo Boost for fixing frequency: in Linux for Intel you can write 1 to each state for each core in `/sys/devices/system/cpu/cpu<core number>/cpuidle/state<state number>/disable` and `/sys/devices/system/cpu/intel_pstate/no_turbo`; check current frequency via `cat /sys/devices/system/cpu/cpufreq/policy*/scaling_cur_freq`
    - prefer benchmarks over tests for more illustrative results; if test runtime depends on dataset size, try increasing it
+   - before measuring of performance do warmup run: 10-15% of planned runs for performance measurement; it loads the CPU cache, allows Branch-Predictor to learn, stabilizes background processes
    - run `perf stat` via the following command
 
       ```shell
@@ -45,6 +46,7 @@
 
       After collecting samples, view execution statistics with `perf report`
    - compare execution traces across all build variants: run each build at least 6-10 times to get averaged numbers
+   - also you can use `perf stat --repeat N` for N runs and use `--table` with it to create a table of measurements
    - compare builds for the target architecture against a reference platform; include the comparison in the report
 
 6. Attempt to optimize bottlenecks:
