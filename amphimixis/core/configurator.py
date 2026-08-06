@@ -144,6 +144,10 @@ def _create_build(  # pylint: disable=too-many-branches, too-many-arguments, too
         raise ValueError(msg)
 
     recipe_info = _get_by_id(input_config["recipes"], recipe_id)
+    if recipe_info is None:
+        msg = f"Build '{build_name}': unknown recipe: '{recipe_id}'"
+        _logger.fatal(msg)
+        raise ValueError(msg)
 
     if not _has_valid_arch(project, run_machine, ui):
         return False
@@ -237,15 +241,14 @@ def _generate_build_name(build_id: str, run_id: str, recipe_id: str) -> str:
 
 def _get_by_id(
     items: list[dict[str, str | int | list[str]]], target_id: str
-) -> dict[str, str | int | list[str]]:
+) -> dict[str, str | int | list[str]] | None:
     """Find an item in a dictionary by ID."""
     for item in items:
         id_ = str(item["id"])
         if id_ == target_id:
             return item
 
-    _logger.error("Item id didn't match any existed id, check input file")
-    return {}
+    return None
 
 
 def _has_valid_arch(
