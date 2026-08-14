@@ -38,6 +38,7 @@ The **platforms** section describes the machines on which the project will be bu
 |                 username                  | string  | (**Optional**) Username of the remote machine  |
 |   port[^3]   | integer | (**Optional**) Port of the remote machine      |
 | password[^4] | string  | (**Optional**) Password for the remote machine |
+| events[^5]   | list[str] or string | (**Optional**) CPU events name for the machine |
 
 ---
 
@@ -47,6 +48,7 @@ The **platforms** section describes the machines on which the project will be bu
 > - For a local machine, `username`, `password`, and `port` do not need to be specified.
 > - If an `address` is specified, the machine is treated as remote, and the fields `username`, `password`, and `port` must be provided.
 > - If you connect with SSH keys instead of a password, run `eval "$(ssh-agent -s)"` and then add the keys for the target machines manually, for example `ssh-add ~/.ssh/id_remote_machine`, before starting Amphimixis.
+> - If events are passed as a string, they must be separated by whitespace.
 
 ### Recipes
 

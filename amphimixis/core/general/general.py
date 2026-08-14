@@ -82,20 +82,24 @@ class MachineInfo:
     If address is None, the machine is considered to be local.
 
     :var MachineAuthenticationInfo auth: Authentication info for the machine.
+    :var list[str] | None events: CPU event names for the machine.
     """
 
     arch: Arch
     address: str | None
     auth: MachineAuthenticationInfo | None
+    events: list[str] | None
 
     @property
     def __dictstr__(self) -> dict:
         """Return a dictionary representation with string-serializable values."""
-        ret: dict[str, str | dict] = {"arch": self.arch.value}
+        ret: dict[str, str | dict | list[str]] = {"arch": self.arch.value}
         if self.address is not None:
             ret["address"] = self.address
         if self.auth is not None:
             ret["auth"] = self.auth.__dictstr__
+        if self.events is not None:
+            ret["events"] = self.events
         return ret
 
 

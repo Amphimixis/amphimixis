@@ -84,7 +84,7 @@ def run_add_toolchain() -> bool:
 
             if not LaboratoryAssistant.find_platform(platform):
                 print(f"Platform '{platform}' not found. Creating as local platform...")
-                machine = MachineInfo(target_arch, address=None, auth=None)
+                machine = MachineInfo(target_arch, address=None, auth=None, events=None)
                 if not LaboratoryAssistant.add_platform(platform, machine):
                     print(f"Failed to create platform '{platform}'.")
                     if not prompt_continue():

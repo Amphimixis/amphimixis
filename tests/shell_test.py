@@ -41,12 +41,13 @@ class FakeHandler:
 @pytest.mark.unit
 class TestShell:
     local_machine = amphimixis.general.MachineInfo(
-        amphimixis.general.Arch.X86, None, None
+        amphimixis.general.Arch.X86, None, None, None
     )
     remote_machine = amphimixis.general.MachineInfo(
         amphimixis.general.Arch.X86,
         "example.com",
         amphimixis.general.MachineAuthenticationInfo("user", "secret", 2222),
+        None,
     )
 
     @pytest.mark.parametrize("machine", [local_machine])
@@ -180,7 +181,7 @@ class TestShell:
 
     def test_connect_raises_for_remote_machine_without_auth(self):
         machine = amphimixis.general.MachineInfo(
-            amphimixis.general.Arch.X86, "example.com", None
+            amphimixis.general.Arch.X86, "example.com", None, None
         )
 
         with pytest.raises(ArgumentError):

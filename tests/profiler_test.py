@@ -45,8 +45,8 @@ def get_profiler(mocker: pytest_mock.MockerFixture, monkeypatch: pytest.MonkeyPa
         workdir_path_mock.return_value = str(path)
         mocker.patch("amphimixis.core.Shell.get_project_workdir", workdir_path_mock)
         build = general.Build(
-            general.MachineInfo(general.Arch.X86, None, None),
-            general.MachineInfo(general.Arch.X86, None, None),
+            general.MachineInfo(general.Arch.X86, None, None, None),
+            general.MachineInfo(general.Arch.X86, None, None, None),
             "test_build",
             [exec_name],
             None,
@@ -80,8 +80,8 @@ def get_profiler(mocker: pytest_mock.MockerFixture, monkeypatch: pytest.MonkeyPa
 def get_shellmocked_profiler(mocker: pytest_mock.MockerFixture, tmp_path: Path):
     def _profiler(executables: list[str] | None = None) -> Profiler:
         build = general.Build(
-            general.MachineInfo(general.Arch.X86, None, None),
-            general.MachineInfo(general.Arch.X86, None, None),
+            general.MachineInfo(general.Arch.X86, None, None, None),
+            general.MachineInfo(general.Arch.X86, None, None, None),
             "test_build",
             executables or [EXECUTABLE_FILENAME],
             None,
