@@ -32,13 +32,14 @@ INVITING_NAME = "Config"
 _qemu_provisioners: dict[int, QemuMachineProvisioner] = {}
 
 
-def provision_qemu_machines(input_config: dict[str, Any], ui: IUI = NullUI()) -> None:
+def provision_qemu_machines(input_config: dict[str, Any], ui: IUI = NullUI()) -> bool:
     """Provision QEMU machines for platforms that have qemu config.
 
     :param dict input_config: Parsed input configuration.
     :param IUI ui: User interface for progress display.
+    :return: True if all qemu platforms were provisioned, False otherwise.
+    :rtype: bool
     """
-    platform: dict[str, Any]
     for platform in input_config.get("platforms", []):
         qemu_info = platform.get("qemu")
         if not qemu_info:
@@ -52,27 +53,54 @@ def provision_qemu_machines(input_config: dict[str, Any], ui: IUI = NullUI()) ->
 
         ui.update_message("QEMU", f"Provisioning {arch} VM for platform {pl_id}...")
 
-        machine = create_machine(platform)
-        provisioner = QemuMachineProvisioner(machine, ui)
-        provisioner.start()
+        provisioner: QemuMachineProvisioner | None = None
+        try:
+            machine = create_machine(platform)
+            provisioner = QemuMachineProvisioner(machine, ui)
+            provisioner.start()
 
-        build_system = input_config.get("build_system", "cmake")
-        runner = input_config.get("runner", "make")
-        packages = _get_required_packages(build_system, runner)
-        if packages:
-            provisioner.install_packages(packages)
+            build_system = input_config.get("build_system", "cmake")
+            runner = input_config.get("runner", "make")
+            packages = _get_required_packages(
+                provisioner._alpine_image, build_system, runner, arch
+            )
+            if packages:
+                provisioner.install_packages(packages)
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            _logger.error("Failed to provision qemu VM for platform %s: %s", pl_id, exc)
+            ui.mark_failed(
+                error_message=f"Failed to provision qemu VM for platform {pl_id}"
+            )
+            if provisioner is not None:
+                provisioner.stop()
+            for _, started in _qemu_provisioners.items():
+                started.stop()
+            _qemu_provisioners.clear()
+            return False
 
+        assert provisioner is not None
         _qemu_provisioners[pl_id] = provisioner
 
+    return True
 
-def _get_required_packages(build_system: str, runner: str) -> list[str]:
+
+def _get_required_packages(
+    alpine_image: bool, build_system: str, runner: str, arch: str = ""
+) -> list[str]:
     """Determine required packages based on build_system and runner.
 
+    :param bool alpine_image: Value for choosing a name of the perf package.
     :param str build_system: Build system (e.g., "cmake", "make", "ninja").
     :param str runner: Runner (e.g., "make", "ninja").
+    :param str arch: Architecture for Alpine-specific packages.
     :return: List of package names to install.
     """
-    packages = ["g++", "time", "linux-perf"]
+    if alpine_image:
+        packages = ["g++", "util-linux", "perf", "rsync"]
+    else:
+        packages = ["g++", "time", "linux-perf", "rsync"]
+
+    packages.insert(0, "bash")
 
     build_system_lower = str(build_system).lower()
     runner_lower = str(runner).lower()
@@ -135,7 +163,10 @@ def parse_config(
     with open(config_file_path, encoding="UTF-8") as file:
         input_config = yaml.safe_load(file)
 
-    provision_qemu_machines(input_config, ui)
+    if not provision_qemu_machines(input_config, ui):
+        _logger.error("Failed to provision qemu machines")
+        ui.mark_failed("Failed to provision qemu machines")
+        return False
 
     build_system: str | None = str(input_config.get("build_system")).lower()
     if build_system not in build_systems_dict:
@@ -360,20 +391,30 @@ def create_machine(machine_info: dict[str, int | str]) -> general.MachineInfo:
     auth = None
 
     if qemu_info is not None and qemu_info:
+        # only for default
         if address is not None and address != "127.0.0.1":
             raise ValueError(
                 f"Platform address must be 127.0.0.1 when qemu is enabled, got: {address}"
             )
         address = "127.0.0.1"
 
-        username = str(machine_info.get("username", ""))
-        if not username:
-            raise ValueError("Username is required when qemu is enabled")
-        password = machine_info.get("password")
-        if password is None:
-            raise ValueError("Password is required when qemu is enabled")
-        password = str(password)
         port = int(machine_info.get("port", DEFAULT_PORT))
+
+        files_provided = isinstance(qemu_info, dict) and any(
+            qemu_info.get(key) for key in ("kernel", "initrd", "disk_image")
+        )
+
+        if files_provided:
+            username = str(machine_info.get("username", ""))
+            if not username:
+                raise ValueError("Username is required when qemu is enabled")
+            password = machine_info.get("password")
+            if password is None:
+                raise ValueError("Password is required when qemu is enabled")
+            password = str(password)
+        else:
+            username = str(machine_info.get("username") or "root")
+            password = str(machine_info.get("password") or "root")
 
         auth = general.MachineAuthenticationInfo(username, password, port)
 
