@@ -20,7 +20,7 @@ from amphimixis.core.general import (
 from amphimixis.core.laboratory_assistant import LaboratoryAssistant
 from amphimixis.core.logger import setup_logger
 
-DEFAULT_PORT = 22
+DEFAULT_PORT = 2222
 
 _errors_count = 0
 
@@ -118,6 +118,7 @@ def _is_valid_platform(platform: dict[str, Any]):
         _notify_about_error(f"Invalid `port` in platform {pl_id}: {port}")
 
     qemu = platform.get("qemu")
+    qemu_enabled = qemu is True or isinstance(qemu, dict)
 
     if qemu is None:
         pass
@@ -135,6 +136,40 @@ def _is_valid_platform(platform: dict[str, Any]):
     else:
         pl_id_str = str(pl_id) if pl_id is not None else "unknown"
         _is_valid_qemu(pl_id_str, qemu)
+
+    if not qemu_enabled:
+        return
+
+    files_provided = _qemu_files_provided(qemu)
+    if files_provided:
+        if not isinstance(username, str) or not username:
+            _notify_about_error(
+                f"Invalid username in platform {pl_id}: "
+                "username is required when qemu is enabled with custom files"
+            )
+        if password is None:
+            _notify_about_error(
+                f"Invalid password in platform {pl_id}: "
+                "password is required when qemu is enabled with custom files"
+            )
+    elif isinstance(arch, str) and arch.lower() not in ("x86", "riscv"):
+        _notify_about_error(
+            f"Invalid arch in platform {pl_id}: {arch} is not supported "
+            "for qemu auto-download. Specify kernel, initrd, and disk_image "
+            "to use another architecture."
+        )
+
+
+def _qemu_files_provided(qemu: Any) -> bool:
+    """Check whether the qemu config specifies any custom VM files.
+
+    :param Any qemu: QEMU configuration (bool or dict).
+    :return: True if kernel, initrd, or disk_image are specified.
+    :rtype: bool
+    """
+    if not isinstance(qemu, dict):
+        return False
+    return any(qemu.get(key) for key in ("kernel", "initrd", "disk_image"))
 
 
 def _is_valid_qemu(pl_id: int | str | None, qemu: dict[str, int | str]) -> None:
