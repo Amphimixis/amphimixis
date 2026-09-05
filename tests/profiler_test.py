@@ -6,6 +6,11 @@ import pytest
 import pytest_mock
 
 from amphimixis.core.profiler import Profiler, general
+from amphimixis.core.general.constants import (
+    PERF_ARCHIVE_EXT,
+    PERF_RECORD_EXT,
+    PERF_SCRIPT_EXT,
+)
 
 EXECUTABLE_FILENAME = "a.out"
 
@@ -78,7 +83,9 @@ def get_profiler(mocker: pytest_mock.MockerFixture, monkeypatch: pytest.MonkeyPa
 
 @pytest.fixture
 def get_shellmocked_profiler(mocker: pytest_mock.MockerFixture, tmp_path: Path):
-    def _profiler(executables: list[str] | None = None) -> Profiler:
+    def _profiler(
+        executables: list[str] | None = None, iteration: int | None = None
+    ) -> Profiler:
         build = general.Build(
             general.MachineInfo(general.Arch.X86, None, None),
             general.MachineInfo(general.Arch.X86, None, None),
@@ -103,7 +110,7 @@ def get_shellmocked_profiler(mocker: pytest_mock.MockerFixture, tmp_path: Path):
             "amphimixis.core.profiler.shell.Shell", return_value=shell_mock
         )
 
-        profiler = Profiler(project, build)
+        profiler = Profiler(project, build, iteration=iteration)
         assert shell_ctor.called
         return profiler
 
@@ -553,3 +560,53 @@ class TestProfiler:
 
         assert run.call_args_list[0].args == ("rm /tmp/a",)
         assert run.call_args_list[1].args == ("rm /tmp/b",)
+
+
+@pytest.mark.unit
+class TestProfilerRepeat:
+    def test_build_name_key_with_iteration(self, get_shellmocked_profiler):
+        profiler = get_shellmocked_profiler(iteration=3)
+        assert profiler._build_name_key() == "test_build_run3"
+
+    def test_build_name_key_without_iteration(self, get_shellmocked_profiler):
+        profiler = get_shellmocked_profiler(iteration=None)
+        assert profiler._build_name_key() == "test_build"
+
+    def test_filenames_appends_iteration_suffix(self, get_shellmocked_profiler):
+        profiler = get_shellmocked_profiler(iteration=2)
+        record = profiler.get_record_filename("bin/a.out")
+        archive = profiler.get_archive_filename("bin/a.out")
+        script = profiler.get_script_filename("bin/a.out")
+
+        for filename in (record, archive, script):
+            assert filename.startswith("test__build__run2..")
+            assert filename.endswith(
+                PERF_RECORD_EXT
+                if filename is record
+                else PERF_ARCHIVE_EXT if filename is archive else PERF_SCRIPT_EXT
+            )
+
+    def test_filenames_without_iteration_have_no_suffix(self, get_shellmocked_profiler):
+        profiler = get_shellmocked_profiler(iteration=None)
+        record = profiler.get_record_filename("bin/a.out")
+
+        assert record.startswith("test__build..")
+
+    def test_save_stats_uses_iteration_key(
+        self, get_shellmocked_profiler, mocker, tmp_path
+    ):
+        profiler = get_shellmocked_profiler(iteration=1)
+        profiler.stats = {"bin/a.out": general.ProfileStats()}
+        mocker.patch("amphimixis.core.profiler.os.getcwd", return_value=str(tmp_path))
+        file_mock = mocker.mock_open()
+        mocker.patch("amphimixis.core.profiler.open", file_mock)
+        mocker.patch(
+            "amphimixis.core.profiler.pickle.load", side_effect=FileNotFoundError
+        )
+        pickle_dump = mocker.patch("amphimixis.core.profiler.pickle.dump")
+
+        profiler.save_stats()
+
+        dumped_data = pickle_dump.call_args[0][0]
+        assert "test_build_run1" in dumped_data
+        assert dumped_data["test_build_run1"] == profiler.stats

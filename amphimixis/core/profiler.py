@@ -53,7 +53,11 @@ class Profiler:
             return f"{prefix} {msg}", kwargs
 
     def __init__(
-        self, project: general.Project, build: general.Build, ui: IUI = NULL_UI
+        self,
+        project: general.Project,
+        build: general.Build,
+        ui: IUI = NULL_UI,
+        iteration: int | None = None,
     ):
         self.project = project
         self.logger = self._customLogger(
@@ -69,6 +73,13 @@ class Profiler:
             self.shell.get_project_workdir(), build.build_name
         )
         self.cleanup_files: list[str] = []
+        self._iteration = iteration
+
+    def _build_name_key(self) -> str:
+        """Return the build name key for stats and filenames, with iteration suffix if set."""
+        if self._iteration is not None:
+            return f"{self.build.build_name}_run{self._iteration}"
+        return self.build.build_name
 
     def cleanup(self):
         """Cleanup generated files from profiling."""
@@ -569,7 +580,7 @@ class Profiler:
         Structure:
         {"build1":{"executable1": ProfileStats, "executable2": ...}, "build2": ...}
         """
-        merged_stats = {self.build.build_name: self.stats}
+        merged_stats = {self._build_name_key(): self.stats}
 
         try:
             with open(
@@ -586,21 +597,21 @@ class Profiler:
     def get_record_filename(self, executable: str) -> str:
         """Get perf record output file name."""
         return (
-            tools.build_filename(self.build.build_name, executable)
+            tools.build_filename(self._build_name_key(), executable)
             + constants.PERF_RECORD_EXT
         )
 
     def get_archive_filename(self, executable: str) -> str:
         """Get perf archive file name."""
         return (
-            tools.build_filename(self.build.build_name, executable)
+            tools.build_filename(self._build_name_key(), executable)
             + constants.PERF_ARCHIVE_EXT
         )
 
     def get_script_filename(self, executable: str) -> str:
         """Get perf script file name."""
         return (
-            tools.build_filename(self.build.build_name, executable)
+            tools.build_filename(self._build_name_key(), executable)
             + constants.PERF_SCRIPT_EXT
         )
 

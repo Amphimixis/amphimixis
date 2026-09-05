@@ -5,7 +5,12 @@ from argparse import ArgumentParser
 from amphimixis.amixis.commands.analyze import run_analyze
 from amphimixis.amixis.commands.build import run_build
 from amphimixis.amixis.commands.profile import run_profile
-from amphimixis.amixis.utils import add_config_arg, add_events_arg, add_path_arg
+from amphimixis.amixis.utils import (
+    add_config_arg,
+    add_events_arg,
+    add_path_arg,
+    add_repeat_arg,
+)
 from amphimixis.core.general import IUI, Project, ProjectStats, constants, tools
 
 HELP_MESSAGE = "Run full pipeline: analyze, build and profile a project"
@@ -18,6 +23,7 @@ def add_args(parser: ArgumentParser) -> None:
     """
     add_path_arg(parser)
     add_config_arg(parser)
+    add_repeat_arg(parser)
     add_events_arg(parser)
 
 
@@ -83,7 +89,7 @@ def show_profiling_result(project: Project) -> None:
 
 
 def run_full_pipeline(
-    project: Project, config_file, ui: IUI, events: list | None = None
+    project: Project, config_file, ui: IUI, events: list | None = None, repeat: int = 1
 ) -> bool:
     """Execute full pipeline: analyze, build, and profile a project.
 
@@ -91,6 +97,7 @@ def run_full_pipeline(
     :param str | Path config_file: Path to configuration file
     :param IUI ui: User interface for progress display
     :param list[str] | None events: List of perf events to record
+    :param int repeat: Number of profiling repetitions (default: 1)
     :return: True if pipeline succeeded, False otherwise
     :rtype: bool
     """
@@ -100,7 +107,7 @@ def run_full_pipeline(
     if not run_build(project, str(config_file), ui):
         return False
 
-    if not run_profile(project, str(config_file), ui, events=events):
+    if not run_profile(project, str(config_file), ui, events=events, repeat=repeat):
         return False
 
     show_profiling_result(project)

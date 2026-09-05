@@ -78,17 +78,22 @@ def main() -> bool:
             config_file = Path(args.config).expanduser().resolve()
 
     target_events = args.events if hasattr(args, "events") else None
+    repeat = args.repeat if hasattr(args, "repeat") else 1
     match args.command:
         case "init":
             return cmd.run_init(args.sample_name)
         case "run":
-            return cmd.run_full_pipeline(project, config_file, ui, events=target_events)
+            return cmd.run_full_pipeline(
+                project, config_file, ui, events=target_events, repeat=repeat
+            )
         case "analyze":
             return cmd.run_analyze(project, ui)
         case "build":
             return cmd.run_build(project, config_file, ui)
         case "profile":
-            return cmd.run_profile(project, config_file, ui, events=target_events)
+            return cmd.run_profile(
+                project, config_file, ui, events=target_events, repeat=repeat
+            )
         case "compare":
             return cmd.run_compare(
                 args.file1, args.file2, target_events, args.max_rows, ui
