@@ -34,6 +34,20 @@ def add_path_arg(parser: ArgumentParser) -> None:
     )
 
 
+def add_repeat_arg(parser: ArgumentParser) -> None:
+    """Add --repeat argument to a parser.
+
+    :param ArgumentParser parser: subcommand parser to which arguments are added
+    """
+    parser.add_argument(
+        "--repeat",
+        type=int,
+        default=1,
+        metavar="N",
+        help="repeat profiling N times (default: 1)",
+    )
+
+
 def add_events_arg(parser: ArgumentParser) -> None:
     """Add --events argument to a parser.
 
