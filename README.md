@@ -2,7 +2,7 @@
 [![Docs](https://img.shields.io/badge/docs-available-blue)](https://github.com/Amphimixis/amphimixis/tree/main/docs)
 [![License](https://img.shields.io/github/license/ebzych/amphimixis?color=8A2BE2)](https://github.com/Amphimixis/amphimixis/blob/main/LICENSE)
 
-![Amphimixis Logo](docs/logo.jpg)
+![Amphimixis Logo](docs/sphinx/_static/logo-light.svg)
 
 # Amphimixis
 
