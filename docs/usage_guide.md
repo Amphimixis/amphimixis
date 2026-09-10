@@ -1,41 +1,46 @@
-# Usage guide
-
-## Table of Contents
-
-- [Choose an installation method](#choose-an-installation-method)
-- [Prepare a workspace](#prepare-a-workspace)
-- [Run the main workflow](#run-the-main-workflow)
-- [Run individual commands](#run-individual-commands)
-- [Work with perf events](#work-with-perf-events)
-- [Compare profiling outputs](#compare-profiling-outputs)
-- [Add a toolchain](#add-a-toolchain)
-- [Clean build directories](#clean-build-directories)
-
----
+# Usage Guide
 
 > If you encounter issues while using Amphimixis, see [Troubleshooting](troubleshooting.md) for common problems and solutions.
 
-## Choose an installation method
+## Requirements
 
-For most users, the recommended path is to create a virtual environment and install directly from GitHub:
+- Python 3.12 or later
+- Linux
+- `rsync` on each machine
+- `sshpass` on the machine that connects to remote hosts with passwords
+- `perf` and `perf archive` on each `run_machine`
+- Target project must support CMake as the build system and Make or Ninja as the low-level runner
+
+See [Troubleshooting → System Dependencies](troubleshooting.md#system-dependencies) for installation commands and the `perf archive` setup.
+
+## Quick Start
+
+If you want to try Amphimixis right away, create a virtual environment, install
+the package from GitHub, and run the full pipeline on a target project:
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install git+https://github.com/ebzych/amphimixis.git@stable
+pip install git+https://github.com/Amphimixis/amphimixis
+amixis init local
+amixis run /path/to/project --config local.yml
 ```
+
+## Choose an installation method
+
+- **For users — install `amixis` with pip** — the venv + `pip install` setup is the same as in [Quick Start](#quick-start), then continue below.
 
 This is the recommended path if you only want to run `amixis` and do not want to install anything into the system Python environment.
 
-If you are developing Amphimixis itself, clone the repository and install dependencies with `uv`:
+- **For development — clone and install with uv:**
 
 ```bash
-git clone https://github.com/ebzych/amphimixis.git
+git clone https://github.com/Amphimixis/amphimixis
 cd amphimixis
 uv sync
 ```
 
-If you specifically want to build a wheel locally and test the packaged artifact, use:
+- **To test the packaged artifact — build a local wheel:**
 
 ```bash
 python3 -m venv .venv
@@ -47,12 +52,6 @@ pip install dist/*.whl
 ## Prepare a workspace
 
 Run Amphimixis from a working directory that contains your configuration and any generated artifacts. Before starting, create an `input.yml` file there.
-
-### Make sure the required system tools are available
-
-Required tools: `rsync` on each machine, `perf` and `perf archive` on each `run_machine`, and optionally `sshpass` for password-based SSH connections.
-
-See [Troubleshooting → System Dependencies](troubleshooting.md) for installation commands and the `perf archive` setup.
 
 ### Create a configuration file
 
@@ -73,8 +72,8 @@ See [Troubleshooting → System Dependencies](troubleshooting.md) for installati
   amixis add input
   ```
 
-- Configuration reference: [config_instruction.md](./config_instruction.md)
-- Example file: [input.yml](./input.yml)
+- Configuration reference: [Configuration File Guide](config_instruction.md)
+- Example file: [Example Configuration File](input.yml)
 
 ### Understand the expected configuration
 
@@ -89,7 +88,7 @@ In `builds`, you can optionally specify an `executables` list for each build. Ea
 
 ### Using SSH keys
 
-You can use Amphimixis with SSH keys. See [Troubleshooting: sshpass not found](troubleshooting.md#sshpass-not-found) for setup.
+You can use Amphimixis with SSH keys. See [Troubleshooting → sshpass **not found**](troubleshooting.md#sshpass-not-found) for setup.
 
 ## Run the main workflow
 

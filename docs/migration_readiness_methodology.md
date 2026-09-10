@@ -1,4 +1,4 @@
-# METHODOLOGY FOR EXPLORING PROJECT READINESS FOR MIGRATION TO A DIFFERENT ARCHITECTURE
+# Migration Readiness Methodology
 
 > This guide assumes maintaining a report to document key findings for each project under study. Nearly every section is highlighted for inclusion in the report
 

@@ -1,9 +1,10 @@
 # ruff: noqa: D400, D415
-"""### CLI module.
+"""CLI module.
 
-#### Entry point:
+Entry point:
 - `__main__`
-#### Main pipelines:
+
+Main pipelines:
 - `commands.run.run_full_pipeline`
 - `commands.analyze.run_analyze`
 - `commands.build.run_build`

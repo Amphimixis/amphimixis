@@ -30,7 +30,7 @@ class ProfileStats:
     :var str | None perf_stat: Output of `perf stat` command.
     :var str | None perf_record_name: Filename of the recorded `perf record` data.
     :var str | None perf_script_name: Filename of the processed `perf script` output.
-    :var str | None perf_script_name: Filename of the archive gathered using `perf archive`.
+    :var str | None perf_archive_name: Filename of the archive gathered using `perf archive`.
     """
 
     build_name: str | None = None
@@ -54,8 +54,7 @@ class MachineAuthenticationInfo:
 
     :var str username: Username for authentication.
     :var str | None password: Password for authentication.
-    Password can be set to None if an SSH agent is used.
-
+        Can be set to None if an SSH agent is used.
     :var int port: Port number for the SSH connection.
     """
 
@@ -79,8 +78,7 @@ class MachineInfo:
 
     :var Arch arch: Architecture of the machine.
     :var str | None address: IP address or hostname of the remote machine.
-    If address is None, the machine is considered to be local.
-
+        If address is None, the machine is considered to be local.
     :var MachineAuthenticationInfo auth: Authentication info for the machine.
     """
 

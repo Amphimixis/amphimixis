@@ -1,0 +1,82 @@
+.github-star-link {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.3rem;
+  padding: var(--sidebar-item-spacing-horizontal);
+  text-decoration: none;
+  font-size: 1.05rem;
+  color: var(--color-foreground-muted);
+}
+.github-star-link svg {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+.github-star-link:hover {
+  color: var(--color-brand-primary);
+  text-decoration: none;
+}
+
+.toc-drawer {
+  --toc-font-size: var(--font-size--normal);
+  --toc-title-font-size: var(--font-size--small);
+  --toc-item-spacing-vertical: 0.5rem;
+}
+.toc-drawer .toc-tree { line-height: 1.4; }
+
+.highlight button.copybtn {
+    opacity: 0.9;
+    width: 1.4em;
+    height: 1.4em;
+    background-color: var(--color-background-hover, #651f94);
+    color: var(--color-foreground-muted);
+    border-color: var(--color-background-border, #1b1f2426);
+}
+.highlight:hover button.copybtn,
+button.copybtn.success {
+    opacity: 0.9;
+}
+.hero {
+    text-align: center;
+    background-color: var(--color-background-secondary);
+    border: 1px solid var(--color-foreground-border);
+    border-left: 0.35em solid var(--color-brand-content);
+    border-radius: 0.5rem;
+    padding: 1.5rem 1.75rem;
+    margin-bottom: 2rem;
+}
+.hero-tagline {
+    color: var(--color-brand-content);
+    font-weight: 600;
+    font-size: 1.15rem;
+    margin: 0 0 0.75rem;
+}
+.grid-item-card .sd-card-title {
+    color: var(--color-brand-content);
+}
+
+body {
+    --color-link--visited: var(--color-brand-content);
+    --color-link--visited--hover: var(--color-brand-content);
+    --color-link-underline--visited: var(--color-background-border);
+    --color-link-underline--visited--hover: var(--color-background-border);
+}
+.github-header-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  color: inherit;
+}
+.content-icon-container .github-header-link {
+  color: var(--color-foreground-secondary);
+}
+.content-icon-container .github-header-link:hover {
+  color: var(--color-brand-primary);
+}
+.github-header-link svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}

@@ -154,8 +154,8 @@ class LaboratoryAssistant:
 
         :param str name: name of toolchain in global config
         :rtype: Toolchain | None
-        :return: Toolchain constructed from Amphimixis global config found by name
-        if not found then return None
+        :return: Toolchain constructed from Amphimixis global config found by name,
+            ``None`` if not found
         """
         toolbox: dict = LaboratoryAssistant.parse_config_file()
         if name in toolbox[_TOOLCHAINS]:

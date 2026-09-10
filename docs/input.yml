@@ -1,12 +1,20 @@
-build_system: CMake
-runner: Ninja
+# Example Configuration File
+# Ready-to-edit templates: amixis init local | distributed | distributed-cross
+
+# build_system:
+# runner:
+
 platforms:
 - id: 1
-  address: 192.169.52.67
-  arch: x86
-  username: root
-  password: password
-  port: 22
+  arch: x86            # Available: x86, riscv, arm
+                       # no 'address' = local machine
+# Remote machine example:
+# - id: 2
+#   arch: riscv        # Available: x86, riscv, arm
+#   address:
+#   username:
+#   password:
+#   port: 22           # default: 22
 
 recipes:
 - id: 1
@@ -14,15 +22,15 @@ recipes:
     -DCMAKE_BUILD_TYPE=RelWithDebInfo
     -DYAML_CPP_BUILD_TESTS=ON
   compiler_flags:
-    cxx_flags: "-O2"
-  jobs: 4
-  toolchain:
-    cxx_compiler: /usr/bin/g++
-  sysroot: /
+    cxx_flags: "-O2"   # compare builds with different flags
+  # jobs:
+  # toolchain:
+  #   cxx_compiler: /usr/bin/g++
+  # sysroot: /
 
 builds:
-- build_machine: 1
-  run_machine: 1
+- build_machine: 1     # platform id where the project is built
+  run_machine: 1       # platform id where perf profiles executables
   recipe_id: 1
-  executables:
-    - test/run-tests
+  # executables:
+  #   - bin/my_app     # relative to build dir

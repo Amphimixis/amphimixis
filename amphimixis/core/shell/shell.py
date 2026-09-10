@@ -95,7 +95,7 @@ class Shell:
             OR
             all commands have been executed.
 
-        :param str *commands: commands to be executed
+        :param str commands: commands to be executed
 
         :rtype: Tuple[int, List[List[str]], List[List[str]]]
         :return: A tuple of three :
@@ -278,9 +278,8 @@ class Shell:
 
         :rtype: str
         :return: In case of remote machine: expanded
-        `~/${AMPHIMIXIS_DIRECTORY_NAME}/${PROJECT_NAME}`.
-
-                 In case of local machine: project path.
+            `~/${AMPHIMIXIS_DIRECTORY_NAME}/${PROJECT_NAME}`.
+            In case of local machine: project path.
         """
         if self._is_local:
             return self.project.path
@@ -295,7 +294,7 @@ class Shell:
         """Set perf_event_paranoid to the given level.
 
         :param int level: The level to set perf_event_paranoid to.
-                          Should be an integer between -1 and 3.
+            Should be an integer between -1 and 3.
 
         :rtype: tuple[int, bool]
         :return: A tuple of two elements:

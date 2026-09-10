@@ -515,10 +515,9 @@ class Profiler:
         """Run `perf script` on the provided perf data file and saves to `filename`.txt.
 
         :param filename: the name of perf record file.
-        :type working_directory: str
-
+        :type filename: str
         :param working_directory: absolute path to set working directory.
-        Should contain perf record file.
+            Should contain perf record file.
         :type working_directory: str
 
         :return: error code and perf script output file name

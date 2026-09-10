@@ -4,3 +4,9 @@ __pycache__/
 config.json
 config.yaml
 /input.yml
+docs/sphinx/build/
+*.log
+amphimixis.analyzed
+*.egg-info/
+*.perfdata*
+.uv-cache/
