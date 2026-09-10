@@ -1,27 +1,5 @@
 # Usage Guide
 
-<!-- DOC-TOC -->
-## Table of Contents
-
-- [Usage Guide](#usage-guide)
-  - [Table of Contents](#table-of-contents)
-  - [Requirements](#requirements)
-  - [Choose an installation method](#choose-an-installation-method)
-  - [Prepare a workspace](#prepare-a-workspace)
-    - [Create a configuration file](#create-a-configuration-file)
-    - [Understand the expected configuration](#understand-the-expected-configuration)
-    - [Using SSH keys](#using-ssh-keys)
-  - [Run the main workflow](#run-the-main-workflow)
-  - [Run individual commands](#run-individual-commands)
-  - [Work with perf events](#work-with-perf-events)
-  - [Compare profiling outputs](#compare-profiling-outputs)
-  - [Add a toolchain](#add-a-toolchain)
-  - [Clean build directories](#clean-build-directories)
-
----
-
-<!-- /DOC-TOC -->
-
 > If you encounter issues while using Amphimixis, see [Troubleshooting](troubleshooting.md) for common problems and solutions.
 
 ## Requirements
@@ -35,15 +13,22 @@
 
 See [Troubleshooting → System Dependencies](troubleshooting.md#system-dependencies) for installation commands and the `perf archive` setup.
 
-## Choose an installation method
+## Quick Start
 
-- **For users — install `amixis` with pip:**
+If you want to try Amphimixis right away, create a virtual environment, install
+the package from GitHub, and run the full pipeline on a target project:
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install git+https://github.com/Amphimixis/amphimixis
+amixis init local
+amixis run /path/to/project --config local.yml
 ```
+
+## Choose an installation method
+
+- **For users — install `amixis` with pip** — the venv + `pip install` setup is the same as in [Quick Start](#quick-start), then continue below.
 
 This is the recommended path if you only want to run `amixis` and do not want to install anything into the system Python environment.
 
@@ -87,8 +72,8 @@ Run Amphimixis from a working directory that contains your configuration and any
   amixis add input
   ```
 
-- Configuration reference: [config_instruction.md](./config_instruction.md)
-- Example file: [input.yml](./input.yml)
+- Configuration reference: [Configuration File Guide](config_instruction.md)
+- Example file: [Example Configuration File](input.yml)
 
 ### Understand the expected configuration
 
@@ -103,7 +88,7 @@ In `builds`, you can optionally specify an `executables` list for each build. Ea
 
 ### Using SSH keys
 
-You can use Amphimixis with SSH keys. See [Troubleshooting: sshpass not found](troubleshooting.md#sshpass-not-found) for setup.
+You can use Amphimixis with SSH keys. See [Troubleshooting → sshpass **not found**](troubleshooting.md#sshpass-not-found) for setup.
 
 ## Run the main workflow
 

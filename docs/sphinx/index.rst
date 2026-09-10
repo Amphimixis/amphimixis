@@ -37,28 +37,15 @@ Features
 Requirements
 ------------
 
-- Python 3.12 or later
-- Linux
-- ``rsync`` on each machine
-- ``sshpass`` on the machine that connects to remote hosts with passwords
-- ``perf`` and ``perf archive`` on each ``run_machine``
-- Target project must support CMake as the build system and Make or Ninja as the low-level runner
+See :doc:`usage_guide` for the full list of required tools and system dependencies.
 
-See :doc:`troubleshooting` for installation commands and the ``perf archive`` setup.
+Quick Start
+-----------
 
-Quick Run
----------
-
-If you want to try Amphimixis right away, create a virtual environment, install
-the package from GitHub, and run the full pipeline on a target project:
-
-.. code-block:: bash
-
-   python3 -m venv .venv
-   source .venv/bin/activate
-   pip install git+https://github.com/Amphimixis/amphimixis.git@stable
-   amixis init local
-   amixis run /path/to/project --config local.yml
+.. include:: ../usage_guide.md
+   :parser: myst_parser.sphinx_
+   :start-after: ## Quick Start
+   :end-before: ## Choose an installation method
 
 .. toctree::
    :maxdepth: 2
@@ -75,7 +62,7 @@ the package from GitHub, and run the full pipeline on a target project:
    :hidden:
 
    usage_examples
-   methodology
+   migration_readiness_methodology
 
 .. toctree::
    :maxdepth: 2

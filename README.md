@@ -8,7 +8,7 @@
 
 Amphimixis is an automated project intelligence and evaluation tool for performance and migration readiness. It helps inspect a project for existing infrastructure such as CI, tests, benchmarks, dependencies, and build scripts, then runs builds and collects performance data for further comparison.
 
-Amphimixis simplifies migration readiness exploration and performance analysis by partially implementing our [methodology](docs/methodologies/migration-readiness-exploring-methodology.md).
+Amphimixis simplifies migration readiness exploration and performance analysis by partially implementing our [methodology](docs/migration_readiness_methodology.md).
 
 > Amphimixis uses `perf` for profiling and can generate a cross‑table comparing two builds per CPU event.
 
@@ -28,27 +28,19 @@ The two builds were executed on different architectures: `1_1_1` on **RISC‑V**
 
 See [the usage guide](docs/usage_guide.md#requirements) for the full list of required tools and system dependencies.
 
-## Quick start
+## Quick Start
 
-If you want to try Amphimixis right away, create a virtual environment, install the package from GitHub, and run the full pipeline on a target project:
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install git+https://github.com/Amphimixis/amphimixis.git@stable
-amixis init local
-amixis run /path/to/project --config local.yml
-```
+See the [Quick Start](docs/usage_guide.md#quick-start) section of the [usage guide](docs/usage_guide.md) to try Amphimixis right away.
 
 ## Documentation
 
-- [Usage guide](docs/usage_guide.md) — installation options, workspace setup, all commands, perf events, SSH auth
-- [Config instruction](docs/config_instruction.md) — full `input.yml` schema reference
+- [Usage Guide](docs/usage_guide.md) — installation options, workspace setup, all commands, perf events, SSH auth
+- [Configuration File Guide](docs/config_instruction.md) — full `input.yml` schema reference
 - [Troubleshooting](docs/troubleshooting.md) — common issues and solutions
-- [Contributing guide](CONTRIBUTING.md) — how to contribute, local checks, pull request guidelines
-- [Migration readiness exploring methodology](docs/methodologies/migration-readiness-exploring-methodology.md) — systematic process for evaluating cross-platform migration readiness
+- [Contributing Guide](CONTRIBUTING.md) — how to contribute, local checks, pull request guidelines
+- [Migration Readiness Methodology](docs/migration_readiness_methodology.md) — systematic process for evaluating cross-platform migration readiness
 
-## Project structure
+## Project Structure
 
 The repository is organized around a small CLI and several core modules:
 

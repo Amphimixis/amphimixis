@@ -1,8 +1,8 @@
-# Configuration file guide
+# Configuration File Guide
 
 This guide explains how to create and configure your project’s configuration file.
 
-See an example configuration file [here](./input.yml).
+See the [Example Configuration File](input.yml).
 
 ## General structure
 

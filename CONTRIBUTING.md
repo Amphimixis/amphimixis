@@ -1,4 +1,4 @@
-# Contributing to Amphimixis
+# Contributing Guide
 
 Thank you for contributing to Amphimixis. This guide is based on the current repository layout and CI scripts, so you can use it as a practical checklist when preparing changes.
 

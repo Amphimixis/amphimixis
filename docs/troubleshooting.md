@@ -2,18 +2,6 @@
 
 This page covers common issues and their solutions when using Amphimixis.
 
-<!-- DOC-TOC -->
-
-## Table of Contents
-
-- [Installation](#installation)
-- [System Dependencies](#system-dependencies)
-- [Build Failures](#build-failures)
-- [Configuration Failures](#configuration-failures)
-- [Profiling Failures](#profiling-failures)
-
-<!-- /DOC-TOC -->
-
 ## Installation
 
 ### `pip install` fails with a Python version error
