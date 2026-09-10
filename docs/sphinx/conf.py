@@ -19,7 +19,6 @@ copyright = "2026, Amphimixis contributors"
 extensions = [
     "myst_parser",
     "sphinx.ext.autodoc",
-    "sphinx.ext.autosummary",
     "sphinx.ext.intersphinx",
     "sphinx_sitemap",
     "sphinx_design",
@@ -35,8 +34,6 @@ source_suffix = {
 root_doc = "index"
 
 nitpicky = True
-autosummary_generate = True
-autosummary_imported_members = False
 autodoc_member_order = "bysource"
 autodoc_default_options = {
     "members": True,
