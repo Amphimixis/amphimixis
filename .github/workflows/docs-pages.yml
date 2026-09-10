@@ -32,6 +32,8 @@ jobs:
         run: uv sync --group dev
       - name: Build HTML documentation
         run: make -C docs/sphinx html
+      - name: Check links
+        run: make -C docs/sphinx linkcheck
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
         with:
