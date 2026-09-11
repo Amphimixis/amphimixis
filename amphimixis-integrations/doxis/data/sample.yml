@@ -1,0 +1,20 @@
+platforms:
+- id: 1
+  arch: x86
+recipes:
+- id: 1
+  config_flags: -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBUILD_TESTING=ON
+  jobs: 4
+- id: 2
+  config_flags: -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBUILD_TESTING=ON
+  compiler_flags:
+    c_flags: -O3 -march=native -g
+    cxx_flags: -O3 -march=native -g
+  jobs: 4
+builds:
+- build_machine: 1
+  run_machine: 1
+  recipe_id: 1
+- build_machine: 1
+  run_machine: 1
+  recipe_id: 2
