@@ -1,0 +1,16 @@
+.git
+.venv
+venv
+node_modules
+.opencode
+__pycache__
+*.pyc
+*.egg-info
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.uv-cache
+amphimixis-integrations/doxis/work
+amphimixis-integrations/doxis/results
+amphimixis-integrations/doxis/input
+amphimixis-integrations/doxis/state

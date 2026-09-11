@@ -16,3 +16,8 @@ config.yaml
 input.yml
 amphimixis.log
 amphimixis.analyzed
+
+amphimixis-integrations/doxis/work
+amphimixis-integrations/doxis/results
+amphimixis-integrations/doxis/input
+amphimixis-integrations/doxis/state
