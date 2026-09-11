@@ -21,3 +21,6 @@ amphimixis.analyzed
 *.perfdata*
 .uv-cache/
 .coverage
+
+amphimixis-integrations/doxis/work
+amphimixis-integrations/doxis/state
