@@ -1,8 +1,8 @@
 """QEMU virtual machine provisioning for remote architectures."""
+
+import os
 import shlex
 import subprocess
-
-import tempfile
 import time
 from pathlib import Path
 from typing import Optional
@@ -22,7 +22,7 @@ DEFAULT_PORT_GUEST = 22
 
 
 class QemuMachineProvisioner:
-    """Manages QEMU virtual machine lifecycle for performance profiling.
+    """Manages QEMU virtual machine lifecycle.
 
     This class handles starting, stopping, and communicating with QEMU VMs
     that provide access to foreign architectures.
@@ -165,7 +165,7 @@ class QemuMachineProvisioner:
         self._ui.update_message("QEMU", "Packages installed")
 
     def get_provisioned_machine(self) -> MachineInfo:
-        """Get machine info with address updated to localhost for the provisioned VM.
+        """Get machine info for the provisioned VM.
 
         :return: MachineInfo with address pointing to the running VM.
         """
@@ -179,7 +179,7 @@ class QemuMachineProvisioner:
     def _build_qemu_command(self) -> list[str]:
         """Build the QEMU command line arguments.
 
-        Uses user-provided machine/cpu when set, otherwise falls back
+        Uses user-provided arguments when set, otherwise falls back
         to arch-specific defaults. Extra arguments from the config
         are appended at the end of the command.
 
@@ -327,10 +327,7 @@ class QemuMachineProvisioner:
         """
 
         arch = self._machine.arch.lower()
-        if arch == "x86":
-            workdir = Path("/tmp/image_x86")
-        else:
-            workdir = Path(tempfile.gettempdir()) / f"amixis_{arch}_vm"
+        workdir = self._get_default_images_dir(arch)
         workdir.mkdir(parents=True, exist_ok=True)
 
         if arch == "riscv":
@@ -462,6 +459,17 @@ class QemuMachineProvisioner:
             "x86": "x86_64",
         }
         return arch_map.get(self._machine.arch.lower(), self._machine.arch.lower())
+
+    def _get_default_images_dir(self, arch: str) -> Path:
+        """Get directory for cached default VM images.
+
+        Uses $XDG_DATA_HOME when set, otherwise ~/.local/share.
+
+        :param str arch: Architecture name (e.g., "x86", "riscv").
+        :return: Path to the images directory.
+        """
+        base = os.environ.get("XDG_DATA_HOME") or str(Path.home() / ".local" / "share")
+        return Path(base) / "amphimixis" / "images" / arch.lower()
 
     def _get_default_machine(self) -> str:
         """Get default QEMU machine type for the architecture.
