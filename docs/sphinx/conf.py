@@ -53,6 +53,7 @@ myst_enable_extensions = [
     "colon_fence",
 ]
 myst_heading_anchors = 4
+suppress_warnings = ["myst.header"]
 
 templates_path = ["_templates"]
 html_theme = "furo"

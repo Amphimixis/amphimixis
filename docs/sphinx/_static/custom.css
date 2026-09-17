@@ -8,11 +8,13 @@
   font-size: 1.05rem;
   color: var(--color-foreground-muted);
 }
+
 .github-star-link svg {
   width: 24px;
   height: 24px;
   flex-shrink: 0;
 }
+
 .github-star-link:hover {
   color: var(--color-brand-primary);
   text-decoration: none;
@@ -33,10 +35,12 @@
     color: var(--color-foreground-muted);
     border-color: var(--color-background-border, #1b1f2426);
 }
+
 .highlight:hover button.copybtn,
 button.copybtn.success {
     opacity: 0.9;
 }
+
 .hero {
     text-align: center;
     background-color: var(--color-background-secondary);
@@ -46,12 +50,14 @@ button.copybtn.success {
     padding: 1.5rem 1.75rem;
     margin-bottom: 2rem;
 }
+
 .hero-tagline {
     color: var(--color-brand-content);
     font-weight: 600;
     font-size: 1.15rem;
     margin: 0 0 0.75rem;
 }
+
 .grid-item-card .sd-card-title {
     color: var(--color-brand-content);
 }
@@ -62,6 +68,7 @@ body {
     --color-link-underline--visited: var(--color-background-border);
     --color-link-underline--visited--hover: var(--color-background-border);
 }
+
 .github-header-link {
   display: inline-flex;
   align-items: center;
@@ -70,9 +77,11 @@ body {
   height: 1.25rem;
   color: inherit;
 }
+
 .content-icon-container .github-header-link {
   color: var(--color-foreground-secondary);
 }
+
 .content-icon-container .github-header-link:hover {
   color: var(--color-brand-primary);
 }
