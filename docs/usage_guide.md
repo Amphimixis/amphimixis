@@ -30,17 +30,21 @@ amixis run /path/to/project --config local.yml
 
 - **For the LLM-agent workflow — install with Opencode integration:**
 
-The `opencode-generated-by-methodology` branch adds the `amixis opencode`
-command, which runs Amphimixis inside [Opencode](https://opencode.ai) as an
+The `Opencode-generated-by-methodology` branch adds the `amixis opencode` command, which runs Amphimixis inside [Opencode](https://opencode.ai) as an
 LLM-powered orchestrator agent:
 
 ```bash
-git clone git@github.com:Amphimixis/amphimixis.git
+git clone https://github.com/Amphimixis/amphimixis
 cd amphimixis
 git checkout Opencode-generated-by-methodology
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e .
+```
+
+Then, from your target project folder, install the methodology agents and tools — `amixis opencode install` copies them into the project's `.opencode` directory:
+
+```bash
 cd path/to/your/project
 amixis opencode install
 ```
@@ -186,7 +190,7 @@ amixis add toolchain
 
 ## Clean build directories
 
-If you want to clean up on your build directories from previous builds, use:
+If you want to clean up your build directories from previous builds, use:
 
 ```bash
 # To interactively select builds to clean
