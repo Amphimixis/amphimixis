@@ -20,11 +20,9 @@ from amphimixis.core.general import (
 from amphimixis.core.general.constants import ANALYZED_FILE_NAME
 from amphimixis.core.laboratory_assistant import LaboratoryAssistant
 from amphimixis.core.logger import setup_logger
-from amphimixis.core.qemu_machine import QemuMachineProvisioner
+from amphimixis.core.qemu_machine import DEFAULT_PORT_HOST, QemuMachineProvisioner
 from amphimixis.core.shell import Shell
 from amphimixis.core.validator import validate
-
-DEFAULT_PORT = 22
 
 _logger = setup_logger("configurator")
 INVITING_NAME = "Config"
@@ -32,7 +30,7 @@ INVITING_NAME = "Config"
 _qemu_provisioners: dict[int, QemuMachineProvisioner] = {}
 
 
-def provision_qemu_machines(input_config: dict[str, Any], ui: IUI = NullUI()) -> bool:
+def provision_qemu_machines(input_config: dict[str, Any], ui: IUI = NULL_UI) -> bool:
     """Provision QEMU machines for platforms that have qemu config.
 
     :param dict input_config: Parsed input configuration.
@@ -389,32 +387,30 @@ def create_machine(machine_info: dict[str, int | str]) -> general.MachineInfo:
     qemu_info = machine_info.get("qemu")
     qemu = None
     auth = None
+    username: str | None
+    password: str | None
 
     if qemu_info is not None and qemu_info:
-        # only for default
-        if address is not None and address != "127.0.0.1":
-            raise ValueError(
-                f"Platform address must be 127.0.0.1 when qemu is enabled, got: {address}"
-            )
+        # qemu works with localhost (127.0.0.1); validated upstream
         address = "127.0.0.1"
 
-        port = int(machine_info.get("port", DEFAULT_PORT))
+        port = int(machine_info.get("port", DEFAULT_PORT_HOST))
 
         files_provided = isinstance(qemu_info, dict) and any(
             qemu_info.get(key) for key in ("kernel", "initrd", "disk_image")
         )
 
-        if files_provided:
-            username = str(machine_info.get("username", ""))
-            if not username:
-                raise ValueError("Username is required when qemu is enabled")
-            password = machine_info.get("password")
-            if password is None:
-                raise ValueError("Password is required when qemu is enabled")
-            password = str(password)
-        else:
-            username = str(machine_info.get("username") or "root")
-            password = str(machine_info.get("password") or "root")
+        username = str(machine_info.get("username") or "root")
+        password = str(machine_info.get("password") or "root")
+
+        if not files_provided and (username != "root" or password != "root"):
+            _logger.warning(
+                "Default QEMU images only support 'root/root' credentials; "
+                "ignoring provided '%s/%s'.",
+                username,
+                password,
+            )
+            username, password = "root", "root"
 
         auth = general.MachineAuthenticationInfo(username, password, port)
 
@@ -429,9 +425,9 @@ def create_machine(machine_info: dict[str, int | str]) -> general.MachineInfo:
     else:
         if address is not None:
             username = str(machine_info.get("username"))
-            password = machine_info.get("password")
-            password = str(password) if password is not None else None
-            port = int(machine_info.get("port", DEFAULT_PORT))
+            raw_password = machine_info.get("password")
+            password = str(raw_password) if raw_password is not None else None
+            port = int(machine_info.get("port", DEFAULT_PORT_HOST))
 
             if username is not None:
                 auth = general.MachineAuthenticationInfo(str(username), password, port)
@@ -450,9 +446,14 @@ def create_qemu_config(qemu_info: Any) -> general.QemuConfig:
     kernel = qemu_info.get("kernel")
     initrd = qemu_info.get("initrd")
     disk_image = qemu_info.get("disk_image")
+    raw_extra = qemu_info.get("extra_args") or []
+    if not isinstance(raw_extra, list):
+        raise ValueError(
+            f"Invalid qemu extra_args: {raw_extra!r}. Expected list of strings."
+        )
 
     return general.QemuConfig(
-        machine=str(qemu_info.get("machine", "virt")),
+        machine=str(qemu_info["machine"]) if qemu_info.get("machine") else None,
         cpu=str(qemu_info.get("cpu")) if qemu_info.get("cpu") else None,
         memory=int(qemu_info.get("memory", 4)),
         smp=int(qemu_info.get("smp", 4)),
@@ -460,6 +461,7 @@ def create_qemu_config(qemu_info: Any) -> general.QemuConfig:
         initrd=Path(str(initrd)) if initrd else None,
         disk_image=Path(str(disk_image)) if disk_image else None,
         keep_alive=bool(qemu_info.get("keep_alive", False)),
+        extra_args=list(map(str, raw_extra)),
     )
 
 

@@ -3,7 +3,7 @@
 import os
 import queue
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import StrEnum
 from os.path import isabs
 from pathlib import Path
@@ -78,7 +78,8 @@ class MachineAuthenticationInfo:
 class QemuConfig:
     """QEMU virtual machine configuration for remote architecture provisioning.
 
-    :var str machine: QEMU machine type (e.g., "virt" for RISC-V).
+    :var str | None machine: QEMU machine type (e.g., "virt" for RISC-V).
+        If None, defaults to arch-specific value ("pc" for x86, "virt" for RISC-V).
     :var str | None cpu: CPU model (e.g., "rv64" for RISC-V).
         If None, defaults to arch-specific value.
     :var int memory_gb: Memory size in GB.
@@ -87,9 +88,11 @@ class QemuConfig:
     :var Path | None initrd: Path to initrd image.
     :var Path | None disk_image: Path to qcow2 disk image.
     :var bool keep_alive: If True, do not delete VM after run completes.
+    :var list[str] extra_args: Additional QEMU command line arguments
+        appended at the end of the command.
     """
 
-    machine: str = "virt"
+    machine: Optional[str] = None
     cpu: Optional[str] = None
     memory: int = 4
     smp: int = 4
@@ -97,6 +100,7 @@ class QemuConfig:
     initrd: Optional[Path] = None
     disk_image: Optional[Path] = None
     keep_alive: bool = False
+    extra_args: list[str] = field(default_factory=list)
 
 
 @dataclass
