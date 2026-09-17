@@ -28,6 +28,23 @@ amixis run /path/to/project --config local.yml
 
 ## Choose an installation method
 
+- **For the LLM-agent workflow — install with Opencode integration:**
+
+The `opencode-generated-by-methodology` branch adds the `amixis opencode`
+command, which runs Amphimixis inside [Opencode](https://opencode.ai) as an
+LLM-powered orchestrator agent:
+
+```bash
+git clone git@github.com:Amphimixis/amphimixis.git
+cd amphimixis
+git checkout Opencode-generated-by-methodology
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e .
+cd path/to/your/project
+amixis opencode install
+```
+
 - **For users — install `amixis` with pip** — the venv + `pip install` setup is the same as in [Quick Start](#quick-start), then continue below.
 
 This is the recommended path if you only want to run `amixis` and do not want to install anything into the system Python environment.
