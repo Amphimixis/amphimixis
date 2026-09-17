@@ -79,7 +79,7 @@ amixis compare 2__2__2..xmltest.scriptout 1__1__1..xmltest.scriptout --max-rows 
 ```
 
 Amphimixis prints one cross-table per `perf` event. Each table shows, for every
-function, it is share of samples in each build and the difference between them.
+function, its share of samples in each build and the difference between them.
 
 The first file is **Build A** and the second is **Build B**.
 
@@ -107,11 +107,8 @@ A **negative Delta** means it takes a larger share on RISC-V.
 | `tinyxml2::MemPoolT<112ul>::SetTracked()`                           |             0.00 |          3.22 |   +3.22 |
 
 > The branch-miss profile clearly differs between the two platforms:
->
-> - x86 uses glibc's vectorized `__strncmp_evex` (AVX-512) EVEX encoding
->  alone accounts for **32.97%** of branch misses. It does not exist on RISC‑V.
-> - On RISC-V, the same work falls on scalar glibc `strncmp` (**25.75%**)
->  and on unresolved samples marked `[unknown]` (**35.59%**).
+> - x86 uses glibc's vectorized `__strncmp_evex` (AVX-512) EVEX encoding alone accounts for **32.97%** of branch misses. It does not exist on RISC‑V.
+> - On RISC-V, the same work falls on scalar glibc `strncmp` (**25.75%**) and on unresolved samples marked `[unknown]` (**35.59%**).
 > - `tinyxml2::StrPair::ParseText` is a hot spot on x86 (**25.64%**) but much less so on RISC-V (**8.62%**).
 
 #### EVENT: CACHE-MISSES
@@ -130,9 +127,7 @@ A **negative Delta** means it takes a larger share on RISC-V.
 | `__printf_fp_l_buffer`                                                  |             0.00 |          0.91 |   +0.91 |
 
 > What do `[unknown]` and `0.00%` mean?
-> - The zeros in the RISC-V column do **not** mean there were no cache misses. The RISC-V kernel/hardware does not expose the `cache-misses`,
-> `perf` event under the same name,
-> so Amphimixis had nothing to sample for >it. The Delta > column only highlights differences that appear in both builds.
+> - The zeros in the RISC-V column do **not** mean there were no cache misses — the RISC-V kernel/hardware returns no samples for `cache-misses`, so Amphimixis had nothing to sample. The Delta column only highlights differences that appear in both builds.
 > - `[unknown]` are unresolved samples (missing debug info or kernel/dynamic loader activity).
 
 #### EVENT: CYCLES
@@ -161,8 +156,7 @@ A **negative Delta** means it takes a larger share on RISC-V.
 | `strncmp@plt`                                                           |             0.00 |          1.63 |   +1.63 |
 
 > The cycle profile tells a similar story:
->
-> - `tinyxml2::XMLDocument::Identify` — a routine that scans and compares strings — grows from **3.27%** of cycles on x86 to **12.25%** on RISC-V. It relies on `strncmp`, and without the vectorized x86 implementation >this routine becomes one of the hottest spots on RISC-V.
+> - `tinyxml2::XMLDocument::Identify` — a routine that scans and compares strings — grows from **3.27%** of cycles on x86 to **12.25%** on RISC-V. It relies on `strncmp`, and without the vectorized x86 implementation this routine becomes one of the hottest spots on RISC-V.
 > - `strncmp` appears only in the RISC-V build (**7.35%**), confirming that string comparison is a migration cost driver.
 > - Several memory-management symbols (`_int_malloc`, destructors, `DeleteNode`) show only on x86, while parsing and attribute routines become relatively more visible on RISC-V.
 
