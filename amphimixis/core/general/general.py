@@ -86,7 +86,7 @@ class QemuConfig:
     :var int smp: Number of SMP processors.
     :var Path | None kernel: Path to kernel image.
     :var Path | None initrd: Path to initrd image.
-    :var Path | None disk_image: Path to qcow2 disk image.
+    :var Path | None disk_image: Path to disk image.
     :var bool keep_alive: If True, do not delete VM after run completes.
     :var list[str] extra_args: Additional QEMU command line arguments
         appended at the end of the command.
