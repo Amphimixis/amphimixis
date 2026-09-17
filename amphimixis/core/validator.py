@@ -120,22 +120,23 @@ def _is_valid_platform(platform: dict[str, Any]):
     qemu = platform.get("qemu")
     qemu_enabled = qemu is True or isinstance(qemu, dict)
 
-    if qemu is None:
-        pass
-    elif isinstance(qemu, bool):
-        if qemu:
-            # qemu: true - validate address is 127.0.0.1 if specified
-            address = platform.get("address")
-            if address is not None and address != "127.0.0.1":
-                _notify_about_error(
-                    f"Platform {pl_id} address must be 127.0.0.1 when qemu is enabled."
-                )
-        # qemu: false - just skip, no error
+    if qemu is None or qemu is False:
+        pass  # qemu absent or explicitly disabled
     elif not qemu:
         _notify_about_error(f"Qemu configuration is empty or invalid: {qemu}")
+    elif qemu_enabled:
+        if isinstance(qemu, dict):
+            pl_id_str = str(pl_id) if pl_id is not None else "unknown"
+            _is_valid_qemu(pl_id_str, qemu)
+
+        address = platform.get("address")
+        if isinstance(address, str) and address not in ("127.0.0.1", "localhost"):
+            _notify_about_error(
+                f"Platform {pl_id} address must be 127.0.0.1 or localhost "
+                f"when qemu is enabled, got: {address}"
+            )
     else:
-        pl_id_str = str(pl_id) if pl_id is not None else "unknown"
-        _is_valid_qemu(pl_id_str, qemu)
+        _notify_about_error(f"Invalid qemu value: {qemu}: expected true or a dict")
 
     if not qemu_enabled:
         return
@@ -215,6 +216,15 @@ def _is_valid_qemu(pl_id: int | str | None, qemu: dict[str, int | str]) -> None:
     if keep_alive is not None and not isinstance(keep_alive, bool):
         _notify_about_error(
             f"Invalid qemu.keep_alive in platform {pl_id}: {keep_alive}"
+        )
+
+    extra_args = qemu.get("extra_args")
+    if extra_args is not None and (
+        not isinstance(extra_args, list)
+        or not all(isinstance(item, str) for item in extra_args)
+    ):
+        _notify_about_error(
+            f"Invalid qemu.extra_args in platform {pl_id}: {extra_args}"
         )
 
 

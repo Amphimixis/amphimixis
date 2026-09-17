@@ -1,12 +1,13 @@
 """QEMU virtual machine provisioning for remote architectures."""
-
+import shlex
 import subprocess
+
 import tempfile
 import time
 from pathlib import Path
 from typing import Optional
 
-from amphimixis.core.general import IUI, MachineInfo, NullUI
+from amphimixis.core.general import IUI, NULL_UI, MachineInfo
 from amphimixis.core.logger import setup_logger
 
 _logger = setup_logger("qemu_provisioner")
@@ -16,6 +17,8 @@ IMAGES_REPO_URL = (
 )
 RISCV_ARCHIVE = "alpine-riscv-vm.tar.gz"
 X86_ARCHIVE = "alpine-x86-64-vm.tar.gz"
+DEFAULT_PORT_HOST = 2222
+DEFAULT_PORT_GUEST = 22
 
 
 class QemuMachineProvisioner:
@@ -28,7 +31,7 @@ class QemuMachineProvisioner:
     def __init__(
         self,
         machine: MachineInfo,
-        ui: IUI = NullUI(),
+        ui: IUI = NULL_UI,
     ):
         if machine.qemu is None:
             raise ValueError("Machine must have QemuConfig to be provisioned")
@@ -56,7 +59,7 @@ class QemuMachineProvisioner:
         if self._process is not None:
             _logger.warning(
                 "VM already running on port %d",
-                self._machine.auth.port if self._machine.auth else 2222,
+                self._machine.auth.port if self._machine.auth else DEFAULT_PORT_HOST,
             )
             return
 
@@ -64,7 +67,7 @@ class QemuMachineProvisioner:
 
         self._ui.update_message(
             "QEMU",
-            f"Starting VM on port {self._machine.auth.port if self._machine.auth else 2222}...",
+            f"Starting VM on port {self._machine.auth.port if self._machine.auth else DEFAULT_PORT_HOST}...",
         )
 
         qemu_cmd = self._build_qemu_command()
@@ -176,17 +179,21 @@ class QemuMachineProvisioner:
     def _build_qemu_command(self) -> list[str]:
         """Build the QEMU command line arguments.
 
+        Uses user-provided machine/cpu when set, otherwise falls back
+        to arch-specific defaults. Extra arguments from the config
+        are appended at the end of the command.
+
         :return: List of command arguments.
         """
-        if self._machine.arch.lower() == "x86":
-            return self._build_alpine_qemu_command()
-
-        cpu = self._config.cpu if self._config.cpu else self._get_default_cpu()
+        arch = self._machine.arch.lower()
+        is_x86 = arch == "x86"
+        machine = self._config.machine or self._get_default_machine()
+        cpu = self._config.cpu or self._get_default_cpu()
 
         cmd = [
             "qemu-system-" + self._get_qemu_arch(),
             "-machine",
-            self._config.machine,
+            machine,
             "-cpu",
             cpu,
             "-m",
@@ -203,7 +210,7 @@ class QemuMachineProvisioner:
             cmd.extend(
                 [
                     "-device",
-                    "virtio-blk-device,drive=hd",
+                    "virtio-blk,drive=hd",
                     "-drive",
                     f"file={self._config.disk_image},if=none,id=hd,snapshot=on",
                 ]
@@ -219,88 +226,38 @@ class QemuMachineProvisioner:
                     raise FileNotFoundError(f"Initrd not found: {self._config.initrd}")
                 cmd.extend(["-initrd", str(self._config.initrd)])
 
-        port = self._machine.auth.port if self._machine.auth else 2222
+        port = self._machine.auth.port if self._machine.auth else DEFAULT_PORT_HOST
 
+        net_device = (
+            "virtio-net-pci,netdev=net" if is_x86 else "virtio-net-device,netdev=net"
+        )
         cmd.extend(
             [
                 "-device",
-                "virtio-net-device,netdev=net",
+                net_device,
                 "-netdev",
-                f"user,id=net,hostfwd=tcp:127.0.0.1:{port}-:22",
+                f"user,id=net,hostfwd=tcp:127.0.0.1:{port}-:{DEFAULT_PORT_GUEST}",
             ]
         )
 
+        rng_device = "virtio-rng-pci,rng=rng" if is_x86 else "virtio-rng-device,rng=rng"
         cmd.extend(
             [
                 "-object",
                 "rng-random,filename=/dev/urandom,id=rng",
                 "-device",
-                "virtio-rng-device,rng=rng",
-                "-nographic",
-                "-append",
-                self._get_kernel_append(),
-            ]
-        )
-
-        return cmd
-
-    def _build_alpine_qemu_command(self) -> list[str]:
-        """Build QEMU command for Alpine x86_64 VM.
-
-        :return: List of command arguments.
-        """
-        cmd = [
-            "qemu-system-x86_64",
-            "-machine",
-            "pc",
-            "-cpu",
-            "qemu64",
-            "-m",
-            f"{self._config.memory}G",
-            "-smp",
-            str(self._config.smp),
-        ]
-
-        if self._kvm_available():
-            cmd.append("-enable-kvm")
-
-        if self._config.disk_image:
-            if not self._config.disk_image.exists():
-                raise FileNotFoundError(
-                    f"Disk image not found: {self._config.disk_image}"
-                )
-            cmd.extend(
-                [
-                    "-drive",
-                    f"file={self._config.disk_image},format=qcow2,if=virtio",
-                ]
-            )
-
-        port = self._machine.auth.port if self._machine.auth else 2222
-
-        cmd.extend(
-            [
-                "-netdev",
-                f"user,id=net0,hostfwd=tcp:127.0.0.1:{port}-:22",
-                "-device",
-                "virtio-net-pci,netdev=net0",
-                "-object",
-                "rng-random,filename=/dev/urandom,id=rng",
-                "-device",
-                "virtio-rng-pci,rng=rng",
+                rng_device,
                 "-nographic",
             ]
         )
 
+        if arch == "riscv" and self._uses_default_files:
+            cmd.extend(["-append", self._get_kernel_append()])
+
+        for arg in self._config.extra_args:
+            cmd.extend(shlex.split(arg))
+
         return cmd
-
-    def _kvm_available(self) -> bool:
-        """Check whether KVM acceleration is available on this host.
-
-        :return: True if the KVM device is present.
-        :rtype: bool
-        """
-        return Path("/dev/kvm").exists()
 
     def _get_kernel_append(self) -> str:
         """Get the kernel command line append string for the current architecture.
@@ -506,6 +463,17 @@ class QemuMachineProvisioner:
         }
         return arch_map.get(self._machine.arch.lower(), self._machine.arch.lower())
 
+    def _get_default_machine(self) -> str:
+        """Get default QEMU machine type for the architecture.
+
+        :return: Machine type string.
+        """
+        machine_map = {
+            "riscv": "virt",
+            "x86": "pc",
+        }
+        return machine_map.get(self._machine.arch.lower(), self._machine.arch.lower())
+
     def _get_default_cpu(self) -> str:
         """Get default CPU model for the architecture.
 
@@ -513,9 +481,9 @@ class QemuMachineProvisioner:
         """
         cpu_map = {
             "riscv": "rv64",
-            "x86": "x86_64",
+            "x86": "qemu64",
         }
-        return cpu_map.get(self._machine.arch.lower(), "qemu64")
+        return cpu_map.get(self._machine.arch.lower(), self._machine.arch.lower())
 
     def _wait_for_ssh(self, timeout: int) -> None:
         """Wait for SSH to become available on the VM.
