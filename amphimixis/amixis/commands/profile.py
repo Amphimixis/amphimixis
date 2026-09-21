@@ -5,7 +5,7 @@ import tempfile
 from argparse import ArgumentParser
 from os import path
 
-from amphimixis.amixis.utils import add_config_arg, add_path_arg
+from amphimixis.amixis.utils import add_config_arg, add_path_arg, add_repeat_arg
 from amphimixis.core import Profiler, Shell, parse_config
 from amphimixis.core.general import IUI, NULL_UI, Project
 
@@ -19,6 +19,7 @@ def add_args(parser: ArgumentParser) -> None:
     """
     add_path_arg(parser)
     add_config_arg(parser)
+    add_repeat_arg(parser)
     parser.add_argument(
         "--events",
         nargs="*",
@@ -71,6 +72,7 @@ def run_profile(
     config_file_path: str,
     ui: IUI = NULL_UI,
     events: list | None = None,
+    repeat: int = 1,
 ) -> bool:
     """Execute project profiling.
 
@@ -78,6 +80,7 @@ def run_profile(
     :param str config_file_path: Path to YAML configuration file
     :param IUI ui: User interface for progress display
     :param list[str] | None events: List of perf events to record
+    :param int repeat: Number of profiling repetitions (default: 1)
     :return: True if profiling succeeded, False otherwise
     :rtype: bool
     """
@@ -90,19 +93,25 @@ def run_profile(
 
     success = True
 
-    for build in project.builds:
-        if not build.successfully_built:
-            continue
-        profiler_ = Profiler(project, build, ui)
-        successful_execs = profiler_.profile_all(events=events)
-        profiler_.save_stats()
-        profiler_.cleanup()
-        if not successful_execs or (
-            build.executables and successful_execs != build.executables
-        ):
-            ui.mark_failed("Some executables failed to be profiled")
-            success = False
-        else:
-            ui.mark_success("Profiling completed!")
+    for iteration in range(1, repeat + 1):
+        if repeat > 1:
+            print(f"\n[repeat] Running profiling iteration {iteration}/{repeat}...")
+
+        for build in project.builds:
+            if not build.successfully_built:
+                continue
+            profiler_ = Profiler(
+                project, build, ui, iteration=iteration if repeat > 1 else None
+            )
+            successful_execs = profiler_.profile_all(events=events)
+            profiler_.save_stats()
+            profiler_.cleanup()
+            if not successful_execs or (
+                build.executables and successful_execs != build.executables
+            ):
+                ui.mark_failed("Some executables failed to be profiled")
+                success = False
+            else:
+                ui.mark_success("Profiling completed!")
 
     return success
