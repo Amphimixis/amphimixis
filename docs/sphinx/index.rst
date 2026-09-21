@@ -87,6 +87,7 @@ Quick Start
 
    usage_guide
    config_instruction
+   config_qemu
    input
 
 .. toctree::
