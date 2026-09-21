@@ -76,7 +76,7 @@ Run Amphimixis from a working directory that contains your configuration and any
 
 ### Create a configuration file
 
-- Start using provided config file sample
+- Start using provided config file sample:
 
   ```bash
   amixis init sample-name

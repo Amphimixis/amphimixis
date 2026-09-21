@@ -162,11 +162,11 @@ A **negative Delta** means it takes a larger share on RISC-V.
 The cross-table shows where you should look to find weak places in code. Common next steps,
 described in the [Migration Readiness Methodology](migration_readiness_methodology.md):
 
-- try compiler vectorization flags (`-ftree-vectorize` for GCC/Clang) and a
+- Try compiler vectorization flags (`-ftree-vectorize` for GCC/Clang) and a
   newer RISC-V toolchain with a vector-capable `strncmp` or `memcpy`.
-- build with LTO to help the compiler inline and optimize hot routines like
+- Build with LTO to help the compiler inline and optimize hot routines like
   `XMLDocument::Identify` and `StrPair::ParseText`.
-- if needed, check `[unknown]` in the full output – usually fixed by building with `RelWithDebInfo` and `perf archive`. — they often indicate missing
+- If needed, check `[unknown]` in the full output – usually fixed by building with `RelWithDebInfo` and `perf archive`. — they often indicate missing
   debug info or kernel/dynamic-loader activity during profiling.
 
 For details on every command used in this example, see the
