@@ -124,7 +124,7 @@ A **negative Delta** means it takes a larger share on RISC-V.
 | `__printf_fp_l_buffer`                                                  |             0.00 |          0.91 |   +0.91 |
 
 > What do `[unknown]` and `0.00%` mean?
-> - The zeros in the RISC-V column do **not** mean there were no cache misses — the RISC-V kernel/hardware returns no samples for `cache-misses` (event has not registered on this platform), so Amphimixis had nothing to sample. The Delta column only highlights differences that appear in both builds.
+> - The zeros in the RISC-V column do **not** mean there were no cache misses — the RISC-V kernel/hardware returns no samples for `cache-misses` (event has not been registered on this platform), so Amphimixis had nothing to sample. The Delta column only highlights differences that appear in both builds.
 > - `[unknown]` are unresolved samples (missing debug info or kernel/dynamic loader activity).
 
 #### EVENT: CYCLES

@@ -67,9 +67,9 @@ The **builds** section links platforms and recipes, defining which configuration
 
 |        Field         |   Type    | Description                                                            |
 | :------------------: | :-------: | :--------------------------------------------------------------------- |
-|    build_machine     |  integer  | `platform_id` of the machine where the project will be built           |
-|     run_machine      |  integer  | `platform_id` of the machine where the built project will be executed  |
-|      recipe_id       |  integer  | ID of the `recipe`                                                     |
+|    build_machine     |  string   | `platform_id` of the machine where the project will be built           |
+|     run_machine      |  string   | `platform_id` of the machine where the built project will be executed  |
+|      recipe_id       |  string   | ID of the `recipe`                                                     |
 |   executables[^7]    |   list    | (**Optional**) List of executables to profile for this build           |
 
 ---
