@@ -5,7 +5,6 @@ import shlex
 import subprocess
 import time
 from pathlib import Path
-from typing import Optional
 
 from amphimixis.core.general import IUI, NULL_UI, MachineInfo
 from amphimixis.core.logger import setup_logger
@@ -82,10 +81,8 @@ class QemuMachineProvisioner:
 
         self._prepare_files()
 
-        self._ui.update_message(
-            "QEMU",
-            f"Starting VM on port {self._machine.auth.port if self._machine.auth else DEFAULT_PORT_HOST}...",
-        )
+        port = self._machine.auth.port if self._machine.auth else DEFAULT_PORT_HOST
+        self._ui.update_message("QEMU", f"Starting VM on port {port}...")
 
         qemu_cmd = self._build_qemu_command()
         _logger.info("Starting QEMU: %s", " ".join(qemu_cmd))
@@ -153,6 +150,7 @@ class QemuMachineProvisioner:
             capture_output=True,
             text=True,
             timeout=timeout,
+            check=False,
         )
 
     def install_packages(self, packages: list[str]) -> None:
@@ -342,7 +340,6 @@ class QemuMachineProvisioner:
 
         Raises NotImplementedError for unsupported architectures.
         """
-
         arch = self._machine.arch.lower()
         workdir = self._get_default_images_dir(arch)
         workdir.mkdir(parents=True, exist_ok=True)
@@ -454,7 +451,7 @@ class QemuMachineProvisioner:
             )
         return disk_file
 
-    def _find_extracted(self, workdir: Path, name: str) -> Optional[Path]:
+    def _find_extracted(self, workdir: Path, name: str) -> Path | None:
         """Find an extracted file by name inside the working directory.
 
         :param Path workdir: Working directory to search.
@@ -539,6 +536,7 @@ class QemuMachineProvisioner:
                 capture_output=True,
                 text=True,
                 timeout=10,
+                check=False,
             )
 
             if result.returncode == 0 and "SSH ready" in result.stdout:

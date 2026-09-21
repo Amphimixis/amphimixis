@@ -7,7 +7,6 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from os.path import isabs
 from pathlib import Path
-from typing import Optional
 
 
 class Arch(StrEnum):
