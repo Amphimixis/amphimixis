@@ -42,14 +42,31 @@ class QemuMachineProvisioner:
         self._machine = machine
         self._config = machine.qemu
         self._ui = ui
-        self._process: Optional[subprocess.Popen] = None
-        self._alpine_image: bool = False
+        self._process: subprocess.Popen | None = None
+        self._default_image: bool = False
         self._uses_default_files: bool = False
 
     @property
     def keep_alive(self) -> bool:
         """Check if VM should be kept alive after cleanup."""
         return self._config.keep_alive
+
+    @property
+    def uses_default_files(self) -> bool:
+        """Check if the VM uses auto-downloaded default files.
+
+        True when no custom kernel/initrd/disk_image were provided
+        (set during start() by _prepare_files()).
+        """
+        return self._uses_default_files
+
+    @property
+    def is_default_image(self) -> bool:
+        """Check if the VM runs the auto-downloaded default image.
+
+        Default images use apk package names for installation.
+        """
+        return self._default_image
 
     def start(self, timeout: int = 500) -> None:
         """Start the QEMU virtual machine and wait for SSH to be ready.
@@ -145,7 +162,7 @@ class QemuMachineProvisioner:
         """
         self._ui.update_message("QEMU", "Installing packages...")
 
-        if self._alpine_image:
+        if self._default_image:
             update_cmd = "apk update"
             install_cmd = f"apk add {' '.join(packages)}"
         else:
@@ -356,7 +373,7 @@ class QemuMachineProvisioner:
                 "Kernel or initrd not found after extraction of RISC-V VM files"
             )
 
-        self._alpine_image = True
+        self._default_image = True
 
         # Set paths in config (only if not already set by user)
         if self._config.disk_image is None:
@@ -374,7 +391,7 @@ class QemuMachineProvisioner:
         qcow2_file = self._download_and_extract(
             workdir, X86_ARCHIVE, "alpine-x86.qcow2"
         )
-        self._alpine_image = True
+        self._default_image = True
 
         if self._config.disk_image is None:
             self._config.disk_image = qcow2_file

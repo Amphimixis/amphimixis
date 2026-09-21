@@ -90,8 +90,7 @@ def validate(config_file_path: str, ui: IUI = NULL_UI) -> bool:
 
 # pylint: disable = R0912
 def _is_valid_platform(platform: dict[str, Any]):
-    """Function to check whether platform is valid"""
-
+    """Check whether platform is valid."""
     pl_id = platform.get("id")
     if not isinstance(pl_id, int | str):
         _notify_about_error(f"Invalid `id` in platform: {pl_id}")
@@ -174,8 +173,7 @@ def _qemu_files_provided(qemu: Any) -> bool:
 
 
 def _is_valid_qemu(pl_id: int | str | None, qemu: dict[str, int | str]) -> None:
-    """Function to check whether QEMU configuration is valid."""
-
+    """Check whether QEMU configuration is valid."""
     if not isinstance(qemu, dict):
         _notify_about_error(
             f"Invalid qemu in platform {pl_id}: expected dict, got {type(qemu).__name__}"
@@ -190,9 +188,9 @@ def _is_valid_qemu(pl_id: int | str | None, qemu: dict[str, int | str]) -> None:
     if not isinstance(cpu, str | None):
         _notify_about_error(f"Invalid qemu.cpu in platform {pl_id}: {cpu}")
 
-    memory_gb = qemu.get("memory_gb")
-    if memory_gb is not None and (not isinstance(memory_gb, int) or memory_gb <= 0):
-        _notify_about_error(f"Invalid qemu.memory_gb in platform {pl_id}: {memory_gb}")
+    memory = qemu.get("memory")
+    if memory is not None and (not isinstance(memory, int) or memory <= 0):
+        _notify_about_error(f"Invalid qemu.memory in platform {pl_id}: {memory}")
 
     smp = qemu.get("smp")
     if smp is not None and (not isinstance(smp, int) or smp <= 0):

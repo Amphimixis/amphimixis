@@ -82,8 +82,8 @@ class QemuConfig:
         If None, defaults to arch-specific value ("pc" for x86, "virt" for RISC-V).
     :var str | None cpu: CPU model (e.g., "rv64" for RISC-V).
         If None, defaults to arch-specific value.
-    :var int memory_gb: Memory size in GB.
-    :var int smp: Number of SMP processors.
+    :var int memory: Memory size in GB (default: 4).
+    :var int smp: Number of SMP processors (default: 4).
     :var Path | None kernel: Path to kernel image.
     :var Path | None initrd: Path to initrd image.
     :var Path | None disk_image: Path to disk image.
@@ -92,13 +92,13 @@ class QemuConfig:
         appended at the end of the command.
     """
 
-    machine: Optional[str] = None
-    cpu: Optional[str] = None
+    machine: str | None = None
+    cpu: str | None = None
     memory: int = 4
     smp: int = 4
-    kernel: Optional[Path] = None
-    initrd: Optional[Path] = None
-    disk_image: Optional[Path] = None
+    kernel: Path | None = None
+    initrd: Path | None = None
+    disk_image: Path | None = None
     keep_alive: bool = False
     extra_args: list[str] = field(default_factory=list)
 
