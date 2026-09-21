@@ -33,6 +33,9 @@ _qemu_provisioners: dict[int, QemuMachineProvisioner] = {}
 def provision_qemu_machines(input_config: dict[str, Any], ui: IUI = NULL_UI) -> bool:
     """Provision QEMU machines for platforms that have qemu config.
 
+    Required packages are installed only on auto-downloaded default
+    images; platforms with custom VM files are used as-is.
+
     :param dict input_config: Parsed input configuration.
     :param IUI ui: User interface for progress display.
     :return bool: True if all qemu platforms were provisioned, False otherwise.
@@ -104,7 +107,6 @@ def _get_required_packages(
         (apk names for the default image, apt names otherwise).
     :param str build_system: Build system (e.g., "cmake", "make", "ninja").
     :param str runner: Runner (e.g., "make", "ninja").
-    :param str arch: Architecture for Alpine-specific packages.
     :return: List of package names to install.
     """
     if default_image:
@@ -312,12 +314,8 @@ def _get_by_id(
 def _has_valid_arch(
     project: general.Project, machine: general.MachineInfo, ui: IUI = NULL_UI
 ) -> bool:
-    """Function to check whether run machine arch is valid"""
-
-    qemu = machine.qemu
-    qemu_enabled = qemu is not None and (
-        isinstance(qemu, bool) and qemu or isinstance(qemu, dict)
-    )
+    """Check whether run machine arch is valid."""
+    qemu_enabled = machine.qemu is not None
     if machine.address is None and not qemu_enabled:
         if machine.arch.lower() not in local_arch().lower():
             _logger.error(
@@ -392,8 +390,16 @@ def _get_analyzed_build_system() -> str | None:
     return None
 
 
-def create_machine(machine_info: dict[str, int | str]) -> general.MachineInfo:
-    """Create a new machine."""
+def create_machine(machine_info: dict[str, Any]) -> general.MachineInfo:
+    """Create a new machine.
+
+    For qemu platforms the address is forced to 127.0.0.1 and
+    auto-downloaded images always use root/root credentials.
+    Custom VM files require explicit username and password.
+
+    :param dict machine_info: Platform dictionary from the input config.
+    :return: MachineInfo with arch, address, auth and qemu config.
+    """
     arch = str(machine_info.get("arch"))
     address = machine_info.get("address")
     address = str(address) if address is not None else None
@@ -413,6 +419,14 @@ def create_machine(machine_info: dict[str, int | str]) -> general.MachineInfo:
         files_provided = isinstance(qemu_info, dict) and any(
             qemu_info.get(key) for key in ("kernel", "initrd", "disk_image")
         )
+
+        if files_provided and (
+            not machine_info.get("username") or machine_info.get("password") is None
+        ):
+            raise ValueError(
+                "Username and password are required when qemu is enabled "
+                "with custom files (kernel/initrd/disk_image)."
+            )
 
         username = str(machine_info.get("username") or "root")
         password = str(machine_info.get("password") or "root")
@@ -452,7 +466,7 @@ def create_machine(machine_info: dict[str, int | str]) -> general.MachineInfo:
 
 
 def create_qemu_config(qemu_info: Any) -> general.QemuConfig:
-    """Function to create QEMU configuration.
+    """Create QEMU configuration.
 
     :param dict qemu_info: Dictionary with QEMU configuration options.
     :return: QemuConfig instance.
