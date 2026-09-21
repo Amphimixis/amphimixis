@@ -1,32 +1,27 @@
-# QEMU virtual machine provisioning for foreign architecture profiling
+# QEMU virtual machine provisioning for cross-building
 #
-# This configuration provisions a RISC-V VM using QEMU for building and
-# profiling projects on architectures not natively available.
-#
-# QEMU option supports 3 ways to specify files:
-# 1. qemu: true - Auto-download defaults for arch (RISC-V only for now)
-# 2. qemu: { disk_image: /path/to/disk } - Use custom disk, auto-download kernel/initrd
-# 3. qemu: { kernel: ..., initrd: ..., disk_image: ... } - Use all custom files
+# This configuration provisions VMs using QEMU for building
+# projects on x86 and RISC-V architectures.
 #
 # Note: When qemu is enabled, address is fixed to 127.0.0.1 (local VM)
 
 platforms:
 - id: 1
   arch: riscv
+  address: 127.0.0.1
   username: root
   password: root
   port: 2222
   qemu: true
 
 - id: 2
-  arch: riscv
+  arch: x86
   username: root
   password: root
-  port: 2222
+  port: 3333
   qemu:
-    machine: virt
-    cpu: rv64
-    memory_gb: 4
+    machine: pc
+    memory: 4
     smp: 4
     kernel: /path/to/kernel
     initrd: /path/to/initrd
