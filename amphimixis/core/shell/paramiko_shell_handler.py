@@ -3,9 +3,9 @@
 import time
 from ctypes import ArgumentError
 
-import paramiko,socket
+import paramiko
 
-from amphimixis.core.general import MachineInfo, QemuConfig
+from amphimixis.core.general import MachineInfo
 from amphimixis.core.shell.shell_interface import IShellHandler
 
 _CLEAR_OUTPUT_FLAG = "CLEAR_OUTPUT_FLAG"
@@ -49,7 +49,7 @@ class _ParamikoHandler(IShellHandler):
         self.chan.send(b"export PS1=''\n")
         self.chan.send(b"exec bash --norc --noprofile\n")
         self._wait_until_ready("BASH_READY")
-        self.chan.settimeout(None)   
+        self.chan.settimeout(None)
 
     def _wait_until_ready(self, ready_flag: str = "READY", timeout: int = 30) -> None:
         deadline = time.monotonic() + timeout
@@ -61,12 +61,11 @@ class _ParamikoHandler(IShellHandler):
             while time.monotonic() < deadline:
                 try:
                     line = self.stdout_readline().strip()
-                except (OSError, socket.timeout):
+                except (OSError, TimeoutError):
                     break
                 if line == ready_flag:
                     return
         raise OSError(f"Remote shell on {self.machine} not ready after {timeout}s")
-
 
     def __del__(self) -> None:
         self.client.close()
