@@ -35,8 +35,7 @@ def provision_qemu_machines(input_config: dict[str, Any], ui: IUI = NULL_UI) -> 
 
     :param dict input_config: Parsed input configuration.
     :param IUI ui: User interface for progress display.
-    :return: True if all qemu platforms were provisioned, False otherwise.
-    :rtype: bool
+    :return bool: True if all qemu platforms were provisioned, False otherwise.
     """
     for platform in input_config.get("platforms", []):
         qemu_info = platform.get("qemu")
@@ -59,11 +58,23 @@ def provision_qemu_machines(input_config: dict[str, Any], ui: IUI = NULL_UI) -> 
 
             build_system = input_config.get("build_system", "cmake")
             runner = input_config.get("runner", "make")
-            packages = _get_required_packages(
-                provisioner._alpine_image, build_system, runner, arch
-            )
-            if packages:
-                provisioner.install_packages(packages)
+            if provisioner.uses_default_files:
+                packages = _get_required_packages(
+                    provisioner.is_default_image, build_system, runner
+                )
+                if packages:
+                    provisioner.install_packages(packages)
+            else:
+                _logger.info(
+                    "Skipping package installation for platform %s: "
+                    "custom VM files, required tools must be pre-installed",
+                    pl_id,
+                )
+                ui.update_message(
+                    "QEMU",
+                    f"Platform {pl_id}: custom image, "
+                    "skipping package installation...",
+                )
         except Exception as exc:  # pylint: disable=broad-exception-caught
             _logger.error("Failed to provision qemu VM for platform %s: %s", pl_id, exc)
             ui.mark_failed(
@@ -83,17 +94,20 @@ def provision_qemu_machines(input_config: dict[str, Any], ui: IUI = NULL_UI) -> 
 
 
 def _get_required_packages(
-    alpine_image: bool, build_system: str, runner: str, arch: str = ""
+    default_image: bool,
+    build_system: str,
+    runner: str,
 ) -> list[str]:
     """Determine required packages based on build_system and runner.
 
-    :param bool alpine_image: Value for choosing a name of the perf package.
+    :param bool default_image: Value for choosing package names
+        (apk names for the default image, apt names otherwise).
     :param str build_system: Build system (e.g., "cmake", "make", "ninja").
     :param str runner: Runner (e.g., "make", "ninja").
     :param str arch: Architecture for Alpine-specific packages.
     :return: List of package names to install.
     """
-    if alpine_image:
+    if default_image:
         packages = ["g++", "util-linux", "perf", "rsync"]
     else:
         packages = ["g++", "time", "linux-perf", "rsync"]
