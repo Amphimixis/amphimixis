@@ -514,11 +514,9 @@ class Profiler:
     def perf_script(self, filename: str, working_directory: str) -> tuple[bool, str]:
         """Run `perf script` on the provided perf data file and saves to `filename`.txt.
 
-        :param filename: the name of perf record file.
-        :type filename: str
-        :param working_directory: absolute path to set working directory.
+        :param str filename: the name of perf record file.
+        :param str working_directory: absolute path to set working directory.
             Should contain perf record file.
-        :type working_directory: str
 
         :return: error code and perf script output file name
         :rtype: tuple[int,str]

@@ -8,13 +8,13 @@ See the [Example Configuration File](input.yml).
 
 The YAML configuration file consists of the following **top-level fields**:
 
-|                     Field                     |         Type         | Description                                                          |
-| :-------------------------------------------: | :------------------: | -------------------------------------------------------------------- |
-| build_system[^1] |        string        | (**Optional**) Name of the build system                              |
-|    runner[^2]    |        string        | (**Optional**) Name of the runner (low-level build system)           |
-|                   platforms                   | list of dictionaries | Describes the platforms used for building and running the project    |
-|                    recipes                    | list of dictionaries | Build configuration parameters                                       |
-|                    builds                     | list of dictionaries | Describes builds tasks                                               |
+|        Field         |         Type         | Description                                                          |
+| :------------------: | :------------------: | :------------------------------------------------------------------- |
+|   build_system[^1]   |        string        | (**Optional**) Name of the build system                              |
+|      runner[^2]      |        string        | (**Optional**) Name of the runner (low-level build system)           |
+|      platforms       | list of dictionaries | Describes the platforms used for building and running the project    |
+|       recipes        | list of dictionaries | Build configuration parameters                                       |
+|       builds         | list of dictionaries | Describes builds tasks                                               |
 
 ---
 
@@ -30,14 +30,14 @@ builds: [{}]
 
 The **platforms** section describes the machines on which the project will be built and run.
 
-|                   Field                   |  Type   | Description                                    |
-| :---------------------------------------: | :-----: | ---------------------------------------------- |
-|                    id                     | integer | Unique id of the platform                      |
-|                   arch                    | string  | Architecture (e.g. x86, riscv)                 |
-|                  address                  | string  | (**Optional**) IP address or domain name       |
-|                 username                  | string  | (**Optional**) Username of the remote machine  |
-|   port[^3]   | integer | (**Optional**) Port of the remote machine      |
-| password[^4] | string  | (**Optional**) Password for the remote machine |
+|        Field         |   Type    | Description                                                            |
+| :------------------: | :-------: | :--------------------------------------------------------------------- |
+|          id          |  string   | Unique id of the platform                                              |
+|         arch         |  string   | Architecture (e.g. x86, riscv)                                         |
+|        address       |  string   | (**Optional**) IP address or domain name                               |
+|       username       |  string   | (**Optional**) Username of the remote machine                          |
+|       port[^3]       |  integer  | (**Optional**) Port of the remote machine                              |
+|     password[^4]     |  string   | (**Optional**) Password for the remote machine                         |
 
 ---
 
@@ -52,25 +52,25 @@ The **platforms** section describes the machines on which the project will be bu
 
 The **recipes** section describes the build configuration and compiler flags.
 
-|                  Field                          |  Type   | Description                                                                               |
-| :---------------------------------------------: | :-----: | ----------------------------------------------------------------------------------------- |
-| id                                              | integer | Unique ID of the recipe                                                                   |
-| config_flags                                    | string  | (**Optional**) Build configuration options                                                |
-| compiler_flags[^5] | dict    | (**Optional**) Compiler flags used during the build process                               |
-| toolchain[^6]      |  dict   | (**Optional**) Path to the toolchain used for building the project                        |
-| sysroot                                         | string  | (**Optional**) Path to the folder with system headers and libraries used by the toolchain |
-| jobs                                            | integer | (**Optional**) Number of parallel jobs used by the build system                           |
+|         Field        |   Type    | Description                                                                               |
+| :------------------: | :-------: | :---------------------------------------------------------------------------------------- |
+|          id          |  string   | Unique ID of the recipe                                                                   |
+|     config_flags     |  string   | (**Optional**) Build configuration options                                                |
+|   compiler_flags[^5] |   dict    | (**Optional**) Compiler flags used during the build process                               |
+|    toolchain[^6]     |   dict    | (**Optional**) Path to the toolchain used for building the project                        |
+|       sysroot        |  string   | (**Optional**) Path to the folder with system headers and libraries used by the toolchain |
+|         jobs         |  integer  | (**Optional**) Number of parallel jobs used by the build system                           |
 
 ### Builds
 
 The **builds** section links platforms and recipes, defining which configurations should be built on which machines.
 
-|     Field                                      |  Type   | Description                                                                |
-| :--------------------------------------------: | :-----: | -------------------------------------------------------------------------- |
-| build_machine                                  | integer | `platform_id` of the machine where the project will be built               |
-| run_machine                                    | integer | `platform_id` of the machine where the built project will be executed      |
-| recipe_id                                      | integer | ID of the `recipe`                                                         |
-| executables[^7]   |  list   | (**Optional**) List of executables to profile for this build               |
+|        Field         |   Type    | Description                                                            |
+| :------------------: | :-------: | :--------------------------------------------------------------------- |
+|    build_machine     |  integer  | `platform_id` of the machine where the project will be built           |
+|     run_machine      |  integer  | `platform_id` of the machine where the built project will be executed  |
+|      recipe_id       |  integer  | ID of the `recipe`                                                     |
+|   executables[^7]    |   list    | (**Optional**) List of executables to profile for this build           |
 
 ---
 

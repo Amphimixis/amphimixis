@@ -1,9 +1,6 @@
 # Usage Examples
 
-> Real-world tasks you can solve with Amphimixis.
-
-This page describes real-world tasks you can solve with Amphimixis, rather
-than a fixed set of scenarios.
+> Real tasks you can solve with Amphimixis.
 
 ## Porting an application to RISC-V
 
@@ -127,7 +124,7 @@ A **negative Delta** means it takes a larger share on RISC-V.
 | `__printf_fp_l_buffer`                                                  |             0.00 |          0.91 |   +0.91 |
 
 > What do `[unknown]` and `0.00%` mean?
-> - The zeros in the RISC-V column do **not** mean there were no cache misses — the RISC-V kernel/hardware returns no samples for `cache-misses`, so Amphimixis had nothing to sample. The Delta column only highlights differences that appear in both builds.
+> - The zeros in the RISC-V column do **not** mean there were no cache misses — the RISC-V kernel/hardware returns no samples for `cache-misses` (event has not registered on this platform), so Amphimixis had nothing to sample. The Delta column only highlights differences that appear in both builds.
 > - `[unknown]` are unresolved samples (missing debug info or kernel/dynamic loader activity).
 
 #### EVENT: CYCLES
@@ -162,14 +159,14 @@ A **negative Delta** means it takes a larger share on RISC-V.
 
 ### What to do next
 
-The cross-table shows where the port loses performance. Common next steps,
+The cross-table shows where you should look to find weak places in code. Common next steps,
 described in the [Migration Readiness Methodology](migration_readiness_methodology.md):
 
 - try compiler vectorization flags (`-ftree-vectorize` for GCC/Clang) and a
-  newer RISC-V toolchain with a vector-capable `strncmp` or `memcpy`;
+  newer RISC-V toolchain with a vector-capable `strncmp` or `memcpy`.
 - build with LTO to help the compiler inline and optimize hot routines like
-  `XMLDocument::Identify` and `StrPair::ParseText`;
-- If needed, check `[unknown]` in the full output – usually fixed by building with `RelWithDebInfo` and `perf archive`. — they often indicate missing
+  `XMLDocument::Identify` and `StrPair::ParseText`.
+- if needed, check `[unknown]` in the full output – usually fixed by building with `RelWithDebInfo` and `perf archive`. — they often indicate missing
   debug info or kernel/dynamic-loader activity during profiling.
 
 For details on every command used in this example, see the

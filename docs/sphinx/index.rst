@@ -17,22 +17,22 @@ Features
    .. grid-item-card:: Analysis
       :text-align: center
 
-      Inspect CI, tests, benchmarks, build config and dependencies.
+      Inspect CI, tests, benchmarks, build config and dependencies
 
    .. grid-item-card:: Building
       :text-align: center
 
-      Build with configured recipes and platforms.
+      Build with configured recipes and platforms
 
    .. grid-item-card:: Profiling
       :text-align: center
 
-      Run executables and collect timing and ``perf`` statistics.
+      Run executables and collect timing and ``perf`` statistics
 
    .. grid-item-card:: Comparison
       :text-align: center
 
-      Produce a cross-table per CPU event.
+      Produce a cross-table per CPU event
 
 Performance cross-table example
 -------------------------------
@@ -52,7 +52,7 @@ for the complete walkthrough and tables.
    because they point to symbols available on only one architecture.
 
 EVENT: BRANCH-MISSES
-^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
 
 .. include:: ../../README.md
    :parser: myst_parser.sphinx_
