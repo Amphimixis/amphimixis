@@ -4,7 +4,7 @@
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/sphinx/_static/logo-dark.png">
-  <img alt="Amphimixis Logo" src="docs/sphinx/_static/logo-light.png" width="400">
+  <img alt="Amphimixis Logo" src="docs/sphinx/_static/logo-light.png" style="max-width: 100%; height: auto;">
 </picture>
 
 # Amphimixis
