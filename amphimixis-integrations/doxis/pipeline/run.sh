@@ -116,8 +116,8 @@ for project in "${projects[@]}"; do
   docker_args+=("$IMAGE")
 
   set +e
-  docker run "${docker_args[@]}" > "$work_dir/pipeline.log" 2>&1
-  rc=$?
+  docker run "${docker_args[@]}" 2>&1 | awk '{ print strftime("%Y-%m-%d %H:%M:%S"), $0; fflush() }' > "$work_dir/pipeline.log"
+  rc=${PIPESTATUS[0]}
   set -e
 
   docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
