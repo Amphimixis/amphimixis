@@ -43,7 +43,7 @@ class _ParamikoHandler(IShellHandler):
             raise ConnectionError("Can't get transport")
 
         self.chan.invoke_shell()
-        self.chan.settimeout(connect_timeout)
+        self.chan.settimeout(15)
         self._wait_until_ready("READY")
         self.chan.send(b"stty -echo\n")
         self.chan.send(b"export PS1=''\n")
