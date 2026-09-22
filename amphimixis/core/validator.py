@@ -88,8 +88,9 @@ def validate(config_file_path: str, ui: IUI = NULL_UI) -> bool:
     return _errors_count == 0
 
 
-def _is_valid_platform(platform: dict[str, int | str]):
-    """Check whether plafrom is valid."""
+# pylint: disable = R0912
+def _is_valid_platform(platform: dict[str, Any]):
+    """Check whether platform is valid."""
     pl_id = platform.get("id")
     if not isinstance(pl_id, int | str):
         _notify_about_error(f"Invalid `id` in platform: {pl_id}")
@@ -114,6 +115,115 @@ def _is_valid_platform(platform: dict[str, int | str]):
     port = platform.get("port", DEFAULT_PORT)
     if not isinstance(port, int) or not 1 <= port <= 65535:
         _notify_about_error(f"Invalid `port` in platform {pl_id}: {port}")
+
+    qemu = platform.get("qemu")
+    qemu_enabled = qemu is True or isinstance(qemu, dict)
+
+    if qemu is None or qemu is False:
+        pass  # qemu absent or explicitly disabled
+    elif not qemu:
+        _notify_about_error(f"Qemu configuration is empty or invalid: {qemu}")
+    elif qemu_enabled:
+        if isinstance(qemu, dict):
+            pl_id_str = str(pl_id) if pl_id is not None else "unknown"
+            _is_valid_qemu(pl_id_str, qemu)
+
+        address = platform.get("address")
+        if isinstance(address, str) and address not in ("127.0.0.1", "localhost"):
+            _notify_about_error(
+                f"Platform {pl_id} address must be 127.0.0.1 or localhost "
+                f"when qemu is enabled, got: {address}"
+            )
+    else:
+        _notify_about_error(f"Invalid qemu value: {qemu}: expected true or a dict")
+
+    if not qemu_enabled:
+        return
+
+    files_provided = _qemu_files_provided(qemu)
+    if files_provided:
+        if not isinstance(username, str) or not username:
+            _notify_about_error(
+                f"Invalid username in platform {pl_id}: "
+                "username is required when qemu is enabled with custom files"
+            )
+        if password is None:
+            _notify_about_error(
+                f"Invalid password in platform {pl_id}: "
+                "password is required when qemu is enabled with custom files"
+            )
+    elif isinstance(arch, str) and arch.lower() not in ("x86", "riscv"):
+        _notify_about_error(
+            f"Invalid arch in platform {pl_id}: {arch} is not supported "
+            "for qemu auto-download. Specify kernel, initrd, and disk_image "
+            "to use another architecture."
+        )
+
+
+def _qemu_files_provided(qemu: Any) -> bool:
+    """Check whether the qemu config specifies any custom VM files.
+
+    :param Any qemu: QEMU configuration (bool or dict).
+    :return: True if kernel, initrd, or disk_image are specified.
+    :rtype: bool
+    """
+    if not isinstance(qemu, dict):
+        return False
+    return any(qemu.get(key) for key in ("kernel", "initrd", "disk_image"))
+
+
+def _is_valid_qemu(pl_id: int | str | None, qemu: dict[str, int | str]) -> None:
+    """Check whether QEMU configuration is valid."""
+    if not isinstance(qemu, dict):
+        _notify_about_error(
+            f"Invalid qemu in platform {pl_id}: expected dict, got {type(qemu).__name__}"
+        )
+        return
+
+    machine = qemu.get("machine")
+    if not isinstance(machine, str | None):
+        _notify_about_error(f"Invalid qemu.machine in platform {pl_id}: {machine}")
+
+    cpu = qemu.get("cpu")
+    if not isinstance(cpu, str | None):
+        _notify_about_error(f"Invalid qemu.cpu in platform {pl_id}: {cpu}")
+
+    memory = qemu.get("memory")
+    if memory is not None and (not isinstance(memory, int) or memory <= 0):
+        _notify_about_error(f"Invalid qemu.memory in platform {pl_id}: {memory}")
+
+    smp = qemu.get("smp")
+    if smp is not None and (not isinstance(smp, int) or smp <= 0):
+        _notify_about_error(f"Invalid qemu.smp in platform {pl_id}: {smp}")
+
+    kernel = qemu.get("kernel")
+    if not isinstance(kernel, str | None):
+        _notify_about_error(f"Invalid qemu.kernel in platform {pl_id}: {kernel}")
+
+    initrd = qemu.get("initrd")
+    if not isinstance(initrd, str | None):
+        _notify_about_error(f"Invalid qemu.initrd in platform {pl_id}: {initrd}")
+
+    disk_image = qemu.get("disk_image")
+    if not isinstance(disk_image, str | None):
+        _notify_about_error(
+            f"Invalid qemu.disk_image in platform {pl_id}: {disk_image}"
+        )
+
+    keep_alive = qemu.get("keep_alive")
+    if keep_alive is not None and not isinstance(keep_alive, bool):
+        _notify_about_error(
+            f"Invalid qemu.keep_alive in platform {pl_id}: {keep_alive}"
+        )
+
+    extra_args = qemu.get("extra_args")
+    if extra_args is not None and (
+        not isinstance(extra_args, list)
+        or not all(isinstance(item, str) for item in extra_args)
+    ):
+        _notify_about_error(
+            f"Invalid qemu.extra_args in platform {pl_id}: {extra_args}"
+        )
 
 
 def _is_valid_recipe(recipe: dict[str, int | str]):

@@ -2,6 +2,7 @@
 
 import pickle
 from os import path
+from pathlib import Path
 from platform import machine as local_arch
 from typing import Any, SupportsInt
 
@@ -19,13 +20,127 @@ from amphimixis.core.general import (
 from amphimixis.core.general.constants import ANALYZED_FILE_NAME
 from amphimixis.core.laboratory_assistant import LaboratoryAssistant
 from amphimixis.core.logger import setup_logger
+from amphimixis.core.qemu_machine import QemuMachineProvisioner
 from amphimixis.core.shell import Shell
-from amphimixis.core.validator import validate
-
-DEFAULT_PORT = 22
+from amphimixis.core.validator import DEFAULT_PORT, validate
 
 _logger = setup_logger("configurator")
 INVITING_NAME = "Config"
+
+_qemu_provisioners: dict[int, QemuMachineProvisioner] = {}
+
+
+def provision_qemu_machines(input_config: dict[str, Any], ui: IUI = NULL_UI) -> bool:
+    """Provision QEMU machines for platforms that have qemu config.
+
+    Required packages are installed only on auto-downloaded default
+    images; platforms with custom VM files are used as-is.
+
+    :param dict input_config: Parsed input configuration.
+    :param IUI ui: User interface for progress display.
+    :return bool: True if all qemu platforms were provisioned, False otherwise.
+    """
+    for platform in input_config.get("platforms", []):
+        qemu_info = platform.get("qemu")
+        if not qemu_info:
+            continue
+
+        pl_id = platform.get("id")
+        if pl_id is None:
+            continue
+        pl_id = int(pl_id)
+        arch = str(platform.get("arch") or "unknown")
+
+        ui.update_message("QEMU", f"Provisioning {arch} VM for platform {pl_id}...")
+
+        provisioner: QemuMachineProvisioner | None = None
+        try:
+            machine = create_machine(platform)
+            provisioner = QemuMachineProvisioner(machine, ui)
+            provisioner.start()
+
+            build_system = input_config.get("build_system", "cmake")
+            runner = input_config.get("runner", "make")
+            if provisioner.uses_default_files:
+                packages = _get_required_packages(
+                    provisioner.is_default_image, build_system, runner
+                )
+                if packages:
+                    provisioner.install_packages(packages)
+            else:
+                _logger.info(
+                    "Skipping package installation for platform %s: "
+                    "custom VM files, required tools must be pre-installed",
+                    pl_id,
+                )
+                ui.update_message(
+                    "QEMU",
+                    f"Platform {pl_id}: custom image, "
+                    "skipping package installation...",
+                )
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            _logger.error("Failed to provision qemu VM for platform %s: %s", pl_id, exc)
+            ui.mark_failed(
+                error_message=f"Failed to provision qemu VM for platform {pl_id}"
+            )
+            if provisioner is not None:
+                provisioner.stop()
+            for _, started in _qemu_provisioners.items():
+                started.stop()
+            _qemu_provisioners.clear()
+            return False
+
+        assert provisioner is not None
+        _qemu_provisioners[pl_id] = provisioner
+
+    return True
+
+
+def _get_required_packages(
+    default_image: bool,
+    build_system: str,
+    runner: str,
+) -> list[str]:
+    """Determine required packages based on build_system and runner.
+
+    :param bool default_image: Value for choosing package names
+        (apk names for the default image, apt names otherwise).
+    :param str build_system: Build system (e.g., "cmake", "make", "ninja").
+    :param str runner: Runner (e.g., "make", "ninja").
+    :return: List of package names to install.
+    """
+    if default_image:
+        packages = ["g++", "util-linux", "perf", "rsync"]
+    else:
+        packages = ["g++", "time", "linux-perf", "rsync"]
+
+    packages.insert(0, "bash")
+
+    build_system_lower = str(build_system).lower()
+    runner_lower = str(runner).lower()
+
+    if build_system_lower == "cmake":
+        packages.append("cmake")
+
+    if runner_lower == "make":
+        packages.append("make")
+    elif runner_lower == "ninja":
+        packages.append("ninja-build")
+
+    return packages
+
+
+def cleanup_qemu_machines() -> None:
+    """Stop all provisioned QEMU machines that are not marked keep_alive."""
+    for pl_id, provisioner in _qemu_provisioners.items():
+        if provisioner.keep_alive:
+            _logger.info(
+                "Keeping QEMU VM for platform %s alive (keep_alive=true)", pl_id
+            )
+            continue
+        _logger.info("Stopping QEMU VM for platform %s", pl_id)
+        provisioner.stop()
+    _qemu_provisioners.clear()
 
 
 # pylint: disable=too-many-return-statements
@@ -61,6 +176,11 @@ def parse_config(
 
     with open(config_file_path, encoding="UTF-8") as file:
         input_config = yaml.safe_load(file)
+
+    if not provision_qemu_machines(input_config, ui):
+        _logger.error("Failed to provision qemu machines")
+        ui.mark_failed("Failed to provision qemu machines")
+        return False
 
     build_system: str | None = str(input_config.get("build_system")).lower()
     if build_system not in build_systems_dict:
@@ -194,8 +314,9 @@ def _get_by_id(
 def _has_valid_arch(
     project: general.Project, machine: general.MachineInfo, ui: IUI = NULL_UI
 ) -> bool:
-    """Check whether the run machine architecture is valid."""
-    if machine.address is None:
+    """Check whether run machine arch is valid."""
+    qemu_enabled = machine.qemu is not None
+    if machine.address is None and not qemu_enabled:
         if machine.arch.lower() not in local_arch().lower():
             _logger.error(
                 "Invalid local machine arch: %s, your machine is %s",
@@ -263,32 +384,113 @@ def _get_analyzed_build_system() -> str | None:
         raise TypeError("Incorrect build systems list")
 
     build_system = build_systems[0].lower()
-    if (
-        build_system in build_systems_dict
-    ):  # take first (in priority) found build system
+    if build_system in build_systems_dict:
         return build_system
 
     return None
 
 
-def create_machine(machine_info: dict[str, int | str]) -> general.MachineInfo:
-    """Create a new machine."""
+def create_machine(machine_info: dict[str, Any]) -> general.MachineInfo:
+    """Create a new machine.
+
+    For qemu platforms the address is forced to 127.0.0.1 and
+    auto-downloaded images always use root/root credentials.
+    Custom VM files require explicit username and password.
+
+    :param dict machine_info: Platform dictionary from the input config.
+    :return: MachineInfo with arch, address, auth and qemu config.
+    """
     arch = str(machine_info.get("arch"))
     address = machine_info.get("address")
     address = str(address) if address is not None else None
-    auth = None
 
-    if address is not None:
-        username = str(machine_info.get("username"))
-        password = machine_info.get("password")
-        password = str(password) if password is not None else None
+    qemu_info = machine_info.get("qemu")
+    qemu = None
+    auth = None
+    username: str | None
+    password: str | None
+
+    if qemu_info is not None and qemu_info:
+        # qemu works with localhost (127.0.0.1); validated upstream
+        address = "127.0.0.1"
+
         port = int(machine_info.get("port", DEFAULT_PORT))
+
+        files_provided = isinstance(qemu_info, dict) and any(
+            qemu_info.get(key) for key in ("kernel", "initrd", "disk_image")
+        )
+
+        if files_provided and (
+            not machine_info.get("username") or machine_info.get("password") is None
+        ):
+            raise ValueError(
+                "Username and password are required when qemu is enabled "
+                "with custom files (kernel/initrd/disk_image)."
+            )
+
+        username = str(machine_info.get("username") or "root")
+        password = str(machine_info.get("password") or "root")
+
+        if not files_provided and (username != "root" or password != "root"):
+            _logger.warning(
+                "Default QEMU images only support 'root/root' credentials; "
+                "ignoring provided '%s/%s'.",
+                username,
+                password,
+            )
+            username, password = "root", "root"
 
         auth = general.MachineAuthenticationInfo(username, password, port)
 
-    machine = general.MachineInfo(general.Arch(arch.lower()), address, auth)
+        if isinstance(qemu_info, bool):
+            qemu = general.QemuConfig()
+        elif isinstance(qemu_info, dict):
+            qemu = create_qemu_config(qemu_info)
+        else:
+            raise ValueError(
+                f"Invalid qemu value: {qemu_info}. Use true or a dict with qemu options."
+            )
+    else:
+        if address is not None:
+            username = str(machine_info.get("username"))
+            raw_password = machine_info.get("password")
+            password = str(raw_password) if raw_password is not None else None
+            port = int(machine_info.get("port", DEFAULT_PORT))
+
+            if username is not None:
+                auth = general.MachineAuthenticationInfo(str(username), password, port)
+
+    machine = general.MachineInfo(general.Arch(arch.lower()), address, auth, qemu)
 
     return machine
+
+
+def create_qemu_config(qemu_info: Any) -> general.QemuConfig:
+    """Create QEMU configuration.
+
+    :param dict qemu_info: Dictionary with QEMU configuration options.
+    :return: QemuConfig instance.
+    """
+    kernel = qemu_info.get("kernel")
+    initrd = qemu_info.get("initrd")
+    disk_image = qemu_info.get("disk_image")
+    raw_extra = qemu_info.get("extra_args") or []
+    if not isinstance(raw_extra, list):
+        raise ValueError(
+            f"Invalid qemu extra_args: {raw_extra!r}. Expected list of strings."
+        )
+
+    return general.QemuConfig(
+        machine=str(qemu_info["machine"]) if qemu_info.get("machine") else None,
+        cpu=str(qemu_info.get("cpu")) if qemu_info.get("cpu") else None,
+        memory=int(qemu_info.get("memory", 4)),
+        smp=int(qemu_info.get("smp", 4)),
+        kernel=Path(str(kernel)) if kernel else None,
+        initrd=Path(str(initrd)) if initrd else None,
+        disk_image=Path(str(disk_image)) if disk_image else None,
+        keep_alive=bool(qemu_info.get("keep_alive", False)),
+        extra_args=list(map(str, raw_extra)),
+    )
 
 
 def create_toolchain(

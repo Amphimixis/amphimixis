@@ -1,0 +1,43 @@
+# QEMU virtual machine provisioning for cross-building
+#
+# This configuration provisions VMs using QEMU for building
+# projects on x86 and RISC-V architectures.
+#
+# Note: When qemu is enabled, address is fixed to 127.0.0.1 (local VM)
+
+platforms:
+- id: 1
+  arch: riscv
+  address: 127.0.0.1
+  username: root
+  password: root
+  port: 2222
+  qemu: true
+
+- id: 2
+  arch: x86
+  username: root
+  password: root
+  port: 3333
+  qemu:
+    machine: pc
+    memory: 4
+    smp: 4
+    kernel: /path/to/kernel
+    initrd: /path/to/initrd
+    disk_image: /path/to/disk_image
+    keep_alive: true # By default: false
+
+recipes:
+- id: 1
+  config_flags: "-DCMAKE_BUILD_TYPE=Release"
+  toolchain:
+    cxx_compiler: "/usr/bin/g++"
+
+builds:
+- build_machine: 1
+  run_machine: 1
+  recipe_id: 1
+- build_machine: 2
+  run_machine: 2
+  recipe_id: 1

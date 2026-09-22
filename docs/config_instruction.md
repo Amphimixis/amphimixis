@@ -30,16 +30,17 @@ builds: [{}]
 
 The **platforms** section describes the machines on which the project will be built and run.
 
-|        Field         |   Type    | Description                                                            |
-| :------------------: | :-------: | :--------------------------------------------------------------------- |
-|          id          |  string   | Unique id of the platform                                              |
-|         arch         |  string   | Architecture (e.g. x86, riscv)                                         |
-|        address       |  string   | (**Optional**) IP address or domain name                               |
-|       username       |  string   | (**Optional**) Username of the remote machine                          |
-|       port[^3]       |  integer  | (**Optional**) Port of the remote machine                              |
-|     password[^4]     |  string   | (**Optional**) Password for the remote machine                         |
+|                   Field                   |      Type       | Description                                    |
+| :---------------------------------------: | :-------------: | :----------------------------------------------|
+|                    id                     |     integer     | Unique id of the platform                      |
+|                   arch                    |     string      | Architecture (e.g. x86, riscv)                 |
+|                  address                  |     string      | (**Optional**) IP address or domain name       |
+|                 username                  |     string      | (**Optional**) Username of the remote machine  |
+|                 port[^3]                  |     integer     | (**Optional**) Port of the remote machine      |
+|                password[^4]               |     string      | (**Optional**) Password for the remote machine |
+|                   qemu                    | boolean or dict | (**Optional**) Provision a local QEMU VM       |
 
----
+See the [config_qemu.md](./config_qemu.md)
 
 > **Note:**
 >

@@ -8,7 +8,7 @@ from amphimixis.amixis.commands import COMMANDS
 MAIN_EXAMPLES = """
 Examples:
   amixis init sample_name
-      → Creates configuration file by sample. Available samples: local, distributed, distributed-cross.
+      → Creates configuration file by sample. Available samples: local, distributed, distributed-cross, qemu.
 
   amixis run /path/to/project
       → Performs full project analysis, generates configuration files,
@@ -59,7 +59,7 @@ EXAMPLES = {
     "init": """Examples:
   amixis init sample_name
       → Creates configuration file by sample. Available samples: \
-        local, distributed, distributed-cross.""",
+        local, distributed, distributed-cross, qemu.""",
     "run": """Examples:
   amixis run /path/to/project
       → Run full pipeline (analyze, build, profile) on project

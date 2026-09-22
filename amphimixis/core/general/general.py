@@ -1,9 +1,10 @@
 """The common module that is used in most other modules."""
 
 import os
+import pathlib
 import queue
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import StrEnum
 from os.path import isabs
 
@@ -73,18 +74,51 @@ class MachineAuthenticationInfo:
 
 
 @dataclass
+class QemuConfig:
+    """QEMU virtual machine configuration for remote architecture provisioning.
+
+    :var str | None machine: QEMU machine type (e.g., "virt" for RISC-V).
+        If None, defaults to arch-specific value ("pc" for x86, "virt" for RISC-V).
+    :var str | None cpu: CPU model (e.g., "rv64" for RISC-V).
+        If None, defaults to arch-specific value.
+    :var int memory: Memory size in GB (default: 4).
+    :var int smp: Number of SMP processors (default: 4).
+    :var pathlib.Path | None kernel: Path to kernel image.
+    :var pathlib.Path | None initrd: Path to initrd image.
+    :var pathlib.Path | None disk_image: Path to disk image.
+    :var bool keep_alive: If True, do not delete VM after run completes.
+    :var list[str] extra_args: Additional QEMU command line arguments
+        appended at the end of the command.
+    """
+
+    machine: str | None = None
+    cpu: str | None = None
+    memory: int = 4
+    smp: int = 4
+    kernel: pathlib.Path | None = None
+    initrd: pathlib.Path | None = None
+    disk_image: pathlib.Path | None = None
+    keep_alive: bool = False
+    extra_args: list[str] = field(default_factory=list)
+
+
+@dataclass
 class MachineInfo:
     """Information about the machine.
 
     :var Arch arch: Architecture of the machine.
     :var str | None address: IP address or hostname of the remote machine.
         If address is None, the machine is considered to be local.
+
     :var MachineAuthenticationInfo auth: Authentication info for the machine.
+
+    :var QemuConfig | None qemu: QEMU configuration if VM provisioning is enabled.
     """
 
     arch: Arch
     address: str | None
     auth: MachineAuthenticationInfo | None
+    qemu: QemuConfig | None = None
 
     @property
     def __dictstr__(self) -> dict:

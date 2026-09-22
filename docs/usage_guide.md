@@ -86,6 +86,7 @@ Run Amphimixis from a working directory that contains your configuration and any
   - local
   - distributed
   - distributed-cross
+  - qemu (local QEMU VMs, see [config_qemu.md](./config_qemu.md))
 
 - Or create config with template:
 
