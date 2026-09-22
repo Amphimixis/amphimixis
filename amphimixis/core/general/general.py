@@ -1,12 +1,12 @@
 """The common module that is used in most other modules."""
 
 import os
+import pathlib
 import queue
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import StrEnum
 from os.path import isabs
-from pathlib import Path
 
 
 class Arch(StrEnum):
@@ -83,9 +83,9 @@ class QemuConfig:
         If None, defaults to arch-specific value.
     :var int memory: Memory size in GB (default: 4).
     :var int smp: Number of SMP processors (default: 4).
-    :var Path | None kernel: Path to kernel image.
-    :var Path | None initrd: Path to initrd image.
-    :var Path | None disk_image: Path to disk image.
+    :var pathlib.Path | None kernel: Path to kernel image.
+    :var pathlib.Path | None initrd: Path to initrd image.
+    :var pathlib.Path | None disk_image: Path to disk image.
     :var bool keep_alive: If True, do not delete VM after run completes.
     :var list[str] extra_args: Additional QEMU command line arguments
         appended at the end of the command.
@@ -95,9 +95,9 @@ class QemuConfig:
     cpu: str | None = None
     memory: int = 4
     smp: int = 4
-    kernel: Path | None = None
-    initrd: Path | None = None
-    disk_image: Path | None = None
+    kernel: pathlib.Path | None = None
+    initrd: pathlib.Path | None = None
+    disk_image: pathlib.Path | None = None
     keep_alive: bool = False
     extra_args: list[str] = field(default_factory=list)
 
