@@ -42,7 +42,6 @@ The **platforms** section describes the machines on which the project will be bu
 
 See the [config_qemu.md](./config_qemu.md)
 
-
 > **Note:**
 >
 > - If the `address` field is not specified, the local machine is assumed.
