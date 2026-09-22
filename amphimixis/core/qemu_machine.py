@@ -8,6 +8,7 @@ from pathlib import Path
 
 from amphimixis.core.general import IUI, NULL_UI, MachineInfo
 from amphimixis.core.logger import setup_logger
+from amphimixis.core.validator import DEFAULT_PORT
 
 _logger = setup_logger("qemu_provisioner")
 
@@ -16,8 +17,6 @@ IMAGES_REPO_URL = (
 )
 RISCV_ARCHIVE = "alpine-riscv-vm.tar.gz"
 X86_ARCHIVE = "alpine-x86-64-vm.tar.gz"
-DEFAULT_PORT_HOST = 2222
-DEFAULT_PORT_GUEST = 22
 
 
 class QemuMachineProvisioner:
@@ -75,13 +74,13 @@ class QemuMachineProvisioner:
         if self._process is not None:
             _logger.warning(
                 "VM already running on port %d",
-                self._machine.auth.port if self._machine.auth else DEFAULT_PORT_HOST,
+                self._machine.auth.port if self._machine.auth else DEFAULT_PORT,
             )
             return
 
         self._prepare_files()
 
-        port = self._machine.auth.port if self._machine.auth else DEFAULT_PORT_HOST
+        port = self._machine.auth.port if self._machine.auth else DEFAULT_PORT
         self._ui.update_message("QEMU", f"Starting VM on port {port}...")
 
         qemu_cmd = self._build_qemu_command()
@@ -241,7 +240,7 @@ class QemuMachineProvisioner:
                     raise FileNotFoundError(f"Initrd not found: {self._config.initrd}")
                 cmd.extend(["-initrd", str(self._config.initrd)])
 
-        port = self._machine.auth.port if self._machine.auth else DEFAULT_PORT_HOST
+        port = self._machine.auth.port if self._machine.auth else DEFAULT_PORT
 
         net_device = (
             "virtio-net-pci,netdev=net" if is_x86 else "virtio-net-device,netdev=net"
@@ -251,7 +250,7 @@ class QemuMachineProvisioner:
                 "-device",
                 net_device,
                 "-netdev",
-                f"user,id=net,hostfwd=tcp:127.0.0.1:{port}-:{DEFAULT_PORT_GUEST}",
+                f"user,id=net,hostfwd=tcp:127.0.0.1:{port}-:{DEFAULT_PORT}",
             ]
         )
 

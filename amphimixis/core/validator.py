@@ -20,7 +20,7 @@ from amphimixis.core.general import (
 from amphimixis.core.laboratory_assistant import LaboratoryAssistant
 from amphimixis.core.logger import setup_logger
 
-DEFAULT_PORT = 2222
+DEFAULT_PORT = 22
 
 _errors_count = 0
 

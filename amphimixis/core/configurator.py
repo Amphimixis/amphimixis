@@ -20,9 +20,9 @@ from amphimixis.core.general import (
 from amphimixis.core.general.constants import ANALYZED_FILE_NAME
 from amphimixis.core.laboratory_assistant import LaboratoryAssistant
 from amphimixis.core.logger import setup_logger
-from amphimixis.core.qemu_machine import DEFAULT_PORT_HOST, QemuMachineProvisioner
+from amphimixis.core.qemu_machine import QemuMachineProvisioner
 from amphimixis.core.shell import Shell
-from amphimixis.core.validator import validate
+from amphimixis.core.validator import DEFAULT_PORT, validate
 
 _logger = setup_logger("configurator")
 INVITING_NAME = "Config"
@@ -414,7 +414,7 @@ def create_machine(machine_info: dict[str, Any]) -> general.MachineInfo:
         # qemu works with localhost (127.0.0.1); validated upstream
         address = "127.0.0.1"
 
-        port = int(machine_info.get("port", DEFAULT_PORT_HOST))
+        port = int(machine_info.get("port", DEFAULT_PORT))
 
         files_provided = isinstance(qemu_info, dict) and any(
             qemu_info.get(key) for key in ("kernel", "initrd", "disk_image")
@@ -455,7 +455,7 @@ def create_machine(machine_info: dict[str, Any]) -> general.MachineInfo:
             username = str(machine_info.get("username"))
             raw_password = machine_info.get("password")
             password = str(raw_password) if raw_password is not None else None
-            port = int(machine_info.get("port", DEFAULT_PORT_HOST))
+            port = int(machine_info.get("port", DEFAULT_PORT))
 
             if username is not None:
                 auth = general.MachineAuthenticationInfo(str(username), password, port)
