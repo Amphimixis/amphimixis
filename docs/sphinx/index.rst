@@ -85,6 +85,7 @@ Quick Start
    :caption: Getting Started
    :hidden:
 
+   amphimixis-ai
    usage_guide
    config_instruction
    input
@@ -96,6 +97,7 @@ Quick Start
 
    usage_examples
    migration_readiness_methodology
+   report-template
 
 .. toctree::
    :maxdepth: 2
@@ -110,3 +112,4 @@ Quick Start
    :hidden:
 
    api/index
+   amphimixis-ai/index

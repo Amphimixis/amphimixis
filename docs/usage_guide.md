@@ -30,13 +30,12 @@ amixis run /path/to/project --config local.yml
 
 - **For the LLM-agent workflow — install with Opencode integration:**
 
-The `Opencode-generated-by-methodology` branch adds the `amixis opencode` command, which runs Amphimixis inside [Opencode](https://opencode.ai) as an
+The `amixis opencode` command runs Amphimixis inside [Opencode](https://opencode.ai) as an
 LLM-powered orchestrator agent:
 
 ```bash
 git clone https://github.com/Amphimixis/amphimixis
 cd amphimixis
-git checkout Opencode-generated-by-methodology
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e .
@@ -105,7 +104,7 @@ At minimum, `input.yml` should describe:
 - the build recipes
 - the builds that connect platforms and recipes
 
-In `builds`, you can optionally specify an `executables` list for each build. Each path must be relative to that build's output directory, for example `bin/my_app`. If `executables` is omitted, Amphimixis profiles the first executable file it finds in the build directory.
+In `builds`, you can optionally specify an `executables` list for each build. Each path must be relative to that build's output directory, for example, `bin/my_app`. If `executables` is omitted, Amphimixis profiles the first executable file it finds in the build directory.
 
 ### Using SSH keys
 
@@ -130,6 +129,12 @@ The full pipeline:
 1. profiles the resulting executables
 1. prints profiling results in the console
 
+A human-readable `perf stat` output is saved as `<project name>.json`. To save it as YAML instead, use `--stats-format` (works with both `run` and `profile`):
+
+```bash
+amixis run /path/to/project --stats-format yaml
+```
+
 ## Run individual commands
 
 Analyze only:
@@ -144,10 +149,32 @@ Build only:
 amixis build /path/to/project
 ```
 
+To build a **specific** build from the configuration file, use `--build-name`:
+
+```bash
+amixis build /path/to/project --build-name 1_2_1
+```
+
+The `--build-name` value must match one of the build entries in your `input.yml` (format: `<build_machine>_<run_machine>_<recipe_id>`). If omitted, every build in the configuration is processed.
+
 Profile only:
 
 ```bash
 amixis profile /path/to/project
+```
+
+To profile a **specific** build, use `--build-name`:
+
+```bash
+amixis profile /path/to/project --build-name 1_2_1
+```
+
+If omitted, profiling runs on every successful build that matches the configuration.
+
+`run` and `profile` commands saves a human-readable perf stat file `\<project name\>.json`. Use `--stats-format yaml` to get YAML instead of JSON:
+
+```bash
+amixis profile /path/to/project --stats-format yaml
 ```
 
 Validate a configuration file:
@@ -178,6 +205,12 @@ To limit how many symbols with the largest delta are shown for each event:
 
 ```bash
 amixis compare build1.scriptout build2.scriptout --max-rows 10
+```
+
+Every comparison also saves the cross-tables as Markdown to `cross-tables/CT-<first file>-<second file>.md`, independently of how they are printed. To print the cross-tables themselves as Markdown tables instead of the default plain-text format, use `--cross-table-format` (`md` is an alias of `markdown`):
+
+```bash
+amixis compare build1.scriptout build2.scriptout --cross-table-format markdown
 ```
 
 ## Add a toolchain
