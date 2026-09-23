@@ -16,4 +16,6 @@ echo -e "${BLUE}Run CI:${NC}"
 "${CI_PATH}"/ruff.sh
 "${CI_PATH}"/mypy.sh
 "${CI_PATH}"/pylint.sh
+"${CI_PATH}"/eslint.sh
 "${CI_PATH}"/pytest.sh
+"${CI_PATH}"/bun-tests.sh
