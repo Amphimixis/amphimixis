@@ -5,6 +5,7 @@ import tempfile
 from argparse import ArgumentParser
 from pathlib import Path
 
+from amphimixis.core.general import CrossTableFormat, StatsFileFormat
 from amphimixis.core.general.constants import DEFAULT_CONFIG_PATH
 
 
@@ -43,6 +44,40 @@ def add_events_arg(parser: ArgumentParser) -> None:
         "--events",
         nargs="*",
         help="space-separated perf events (e.g., cycles cache-misses)",
+    )
+
+
+def add_stats_format_arg(parser: ArgumentParser) -> None:
+    """Add --stats-format argument to a parser.
+
+    The pickle file ``<project name>.pkl`` is always saved; this argument
+    selects the format of the additional human-readable perf stat file.
+
+    :param ArgumentParser parser: subcommand parser to which arguments are added
+    """
+    parser.add_argument(
+        "--stats-format",
+        type=StatsFileFormat,
+        choices=list(StatsFileFormat),
+        default=StatsFileFormat.JSON,
+        help="format of the additional human-readable perf stat file (default: json)",
+    )
+
+
+def add_cross_table_format_arg(parser: ArgumentParser) -> None:
+    """Add --cross-table-format argument to a parser.
+
+    Markdown cross-tables are always saved to ``cross-tables/CT-*.md``
+    files; this argument affects console output only.
+
+    :param ArgumentParser parser: subcommand parser to which arguments are added
+    """
+    parser.add_argument(
+        "--cross-table-format",
+        choices=[fmt.value for fmt in CrossTableFormat],
+        default=CrossTableFormat.ORIGINAL,
+        help="console output format for cross-tables: original, markdown "
+        "(default: original). Markdown is always saved to a CT-*.md file",
     )
 
 

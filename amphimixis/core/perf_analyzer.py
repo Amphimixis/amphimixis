@@ -3,14 +3,17 @@
 # pylint: disable=too-many-arguments
 
 import os
+import re
 import shutil
 import sys
 from collections import defaultdict
+from pathlib import Path
 
 import pandas as pd
 from openai import OpenAI
 
-from amphimixis.core.general import tools
+from amphimixis.core.general import CrossTableFormat, constants, tools
+from amphimixis.core.general.tools import get_unique_path
 
 
 # pylint: disable=too-few-public-methods
@@ -201,6 +204,69 @@ def _format_df_to_text(event_name, df):
     return "\n".join(text)
 
 
+def _escape_markdown_text(text: str) -> str:
+    """Escape GFM special characters in a text cell."""
+    replacements = {
+        "\\": "\\\\",
+        "_": "\\_",
+        "*": "\\*",
+        "[": "\\[",
+        "]": "\\]",
+    }
+    for char, replacement in replacements.items():
+        text = text.replace(char, replacement)
+    return text
+
+
+# pylint: disable=too-many-locals
+def _format_df_to_markdown(
+    event_name, df, build_a=BUILD_A_DEFAULT, build_b=BUILD_B_DEFAULT
+):
+    """Format comparison DataFrame as a GFM markdown table.
+
+    :param str event_name: name of the compared perf event
+    :param pd.DataFrame df: comparison data for the event
+    :param str build_a: baseline build name
+    :param str build_b: another build name
+    :return: markdown table text
+    :rtype: str
+    """
+    lines = [f"## EVENT: {_escape_markdown_text(event_name.upper())}", ""]
+    headers = ("Symbol", f"{build_a} %", f"{build_b} %", "Delta %")
+
+    rows = []
+    for _, r in df.iterrows():
+        sym = _escape_markdown_text(str(r["symbol"]))
+        val_a = f"{r['share_a']:.2f}"
+        val_b = f"{r['share_b']:.2f}"
+        val_d = f"{r['delta']:+.2f}"
+        rows.append((sym, val_a, val_b, val_d))
+
+    widths = [
+        max([len(headers[column])] + [len(row[column]) for row in rows])
+        for column in range(len(headers))
+    ]
+
+    lines.append(
+        "| " + " | ".join(h.ljust(widths[i]) for i, h in enumerate(headers)) + " |"
+    )
+    lines.append(
+        f"|:{'-' * widths[0]}-"
+        f"|{'-' * widths[1]}:"
+        f"|{'-' * widths[2]}:"
+        f"|{'-' * widths[3]}:|"
+    )
+
+    for sym, val_a, val_b, val_d in rows:
+        lines.append(
+            f"| {sym:<{widths[0]}} "
+            f"| {val_a:>{widths[1]}} "
+            f"| {val_b:>{widths[2]}} "
+            f"| {val_d:>{widths[3]}} |"
+        )
+    return "\n".join(lines) + "\n"
+
+
 def _get_raw_context(perf_file, target_symbols):
     context_raw = []
     with open(perf_file, encoding="UTF-8") as f:
@@ -303,16 +369,24 @@ def main(
     target_events: None | list[str] = None,
     max_rows=20,
     use_llm=False,
+    cross_table_format: CrossTableFormat = CrossTableFormat.ORIGINAL,
 ) -> int:
     """Compare two perf output files and print the top `max_rows` symbols.
 
     Print symbols with the most significant changes for specified events.
+    Cross-tables are always saved in Markdown to
+    ``cross-tables/CT-<first file>-<second file>.md`` independently of the
+    console output format.
 
     :param str filename1: path to baseline build perfdata.scriptout
     :param str filename2: path to another build perfdata.scriptout
     :param list[str] target_events: list of events to compare
     :param int max_rows: maximum symbols to print per event
     :param bool use_llm: use LLM
+    :param CrossTableFormat cross_table_format: console output format.
+        Default ``CrossTableFormat.ORIGINAL``
+    :return: 0 on success, 1 on failure
+    :rtype: int
     """
     build_a = _get_build_data(filename1)
     build_b = _get_build_data(filename2)
@@ -330,20 +404,35 @@ def main(
 
     all_events = sorted(set(stats_a.keys()) | set(stats_b.keys()))
 
-    top_regressions = []
-    comparison_table_text = ""
-
     if not all(event in all_events for event in target_events or []):
         print("Available events: ", *all_events)
         return 1
 
-    for event in target_events if target_events else all_events:
-        print_comparison_table(
-            event, stats_a[event], stats_b[event], max_rows, build_a, build_b
-        )
+    top_regressions = []
+    comparison_table_text = ""
 
+    file_a_base = os.path.splitext(os.path.basename(filename1))[0]
+    file_b_base = os.path.splitext(os.path.basename(filename2))[0]
+    md_content = (
+        f"# Cross-tables for {_escape_markdown_text(file_a_base)} "
+        f"and {_escape_markdown_text(file_b_base)}\n\n"
+    )
+    if cross_table_format == CrossTableFormat.MARKDOWN:
+        print(md_content, end="")
+
+    for event in target_events if target_events else all_events:
         df = _get_comparison_data(stats_a[event], stats_b[event], max_rows)
+        md_table = _format_df_to_markdown(event, df, build_a, build_b)
+
+        if cross_table_format == CrossTableFormat.MARKDOWN:
+            print(md_table, end="")
+        else:
+            print_comparison_table(
+                event, stats_a[event], stats_b[event], max_rows, build_a, build_b
+            )
+
         comparison_table_text += _format_df_to_text(event, df)
+        md_content += md_table + "\n"
         top_regressions.extend(df[df["delta"] > 0.5]["symbol"].tolist())
 
     raw_samples_a = _get_raw_context(filename1, top_regressions[:5])
@@ -351,7 +440,24 @@ def main(
     if use_llm:
         analyze_with_llm(comparison_table_text, raw_samples_a, raw_samples_b)
 
+    _save_cross_tables_md(md_content, file_a_base, file_b_base)
+
     return 0
+
+
+def _save_cross_tables_md(md_content, file_a_base, file_b_base) -> None:
+    """Save cross-tables markdown to ``cross-tables/CT-<a>-<b>.md``.
+
+    :param str md_content: full markdown content of the cross-tables
+    :param str file_a_base: basename of the first compared perf output file
+    :param str file_b_base: basename of the second compared perf output file
+    """
+    safe_name = re.sub(r"[^\w.\-]", "_", f"CT-{file_a_base}-{file_b_base}.md")
+    ct_path = get_unique_path(Path(constants.CROSS_TABLES_DIR_NAME) / safe_name)
+    ct_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with open(ct_path, "w", encoding="utf-8") as file:
+        file.write(md_content)
 
 
 if __name__ == "__main__":

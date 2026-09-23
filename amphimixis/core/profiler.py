@@ -1,8 +1,13 @@
 """Module for profiling executables within a project."""
 
+import csv
+import dataclasses
+import json
 import logging
 import os
 import pickle
+
+import yaml
 
 from amphimixis.core import general, logger, shell
 from amphimixis.core.general import (
@@ -10,6 +15,7 @@ from amphimixis.core.general import (
     NULL_UI,
     ProfileStats,
     ProjectStats,
+    StatsFileFormat,
     constants,
     tools,
 )
@@ -17,7 +23,7 @@ from amphimixis.core.general import (
 _commands_args: dict[str, dict[str, str]] = {
     "stat": {
         "cmd": "perf stat",
-        "opt": "-ddd -x,",
+        "opt": "-ddd -x|",
         "cpu_affinity": "taskset -c 0",
     },
     "record": {"cmd": "perf record", "cpu_affinity": "taskset -c 0"},
@@ -27,6 +33,20 @@ _commands_args: dict[str, dict[str, str]] = {
         "cpu_affinity": "taskset -c 0",
     },
 }
+
+# Standard columns expected from 'perf stat -x'
+PERF_STAT_HEADERS = [
+    "counter_value",
+    "unit",
+    "event",
+    "event-runtime",
+    "pcnt-running",
+    "metric-value",
+    "metric-unit",
+    "metric-threshold",
+]
+
+PERF_STAT_DELIMITER = "|"
 
 
 # pylint: disable=too-many-instance-attributes
@@ -558,27 +578,126 @@ class Profiler:
 
         return True, perf_script_file
 
-    def save_stats(self):
-        """Save collected statistics to a file.
+    def save_stats(self, stats_file_format: StatsFileFormat = StatsFileFormat.JSON):
+        """Save collected statistics to files.
 
         Merges with previous build statistics.
 
+        Always saves a pickle file ``<project name>.pkl``. Additionally saves
+        human-readable statistics in JSON or YAML format. In the
+        human-readable file the raw ``perf stat`` CSV output is converted to
+        a list of dictionaries.
+
         Structure:
         {"build1":{"executable1": ProfileStats, "executable2": ...}, "build2": ...}
+
+        :param stats_file_format: format of the additional human-readable
+            stats file (JSON by default).
+        :type stats_file_format: StatsFileFormat
         """
         merged_stats = {self.build.build_name: self.stats}
+        stats_path = os.path.join(os.getcwd(), self._get_stats_filename())
 
         try:
-            with open(
-                os.path.join(os.getcwd(), self._get_stats_filename()), "rb"
-            ) as file:
+            with open(stats_path, "rb") as file:
                 obj: ProjectStats = pickle.load(file)
             merged_stats.update(obj)
         except FileNotFoundError:
             pass
 
-        with open(os.path.join(os.getcwd(), self._get_stats_filename()), "wb") as file:
+        with open(stats_path, "wb") as file:
             pickle.dump(merged_stats, file)
+
+        serialized = self._serialize_stats(merged_stats)
+        base = os.path.splitext(stats_path)[0]
+        if stats_file_format == StatsFileFormat.YAML:
+            self._save_to_yaml(serialized, base + ".yaml")
+        else:
+            self._save_to_json(serialized, base + ".json")
+
+    @staticmethod
+    def _parse_perf_stat_csv(
+        lines: list[str], delim: str = PERF_STAT_DELIMITER
+    ) -> list[dict]:
+        """Convert `perf stat -x` CSV output to a list of dictionaries.
+
+        Each dictionary maps a standard `perf stat -x` column name
+        (:data:`PERF_STAT_HEADERS`) to its string value. Empty values,
+        empty lines and comment lines are skipped.
+
+        :param lines: lines of the `perf stat` output.
+        :type lines: list[str]
+
+        :param delim: field delimiter used by `perf stat -x`.
+        :type delim: str
+
+        :return: list of parsed counter rows.
+        :rtype: list[dict]
+        """
+        parsed: list[dict] = []
+        clean_lines = (
+            line for line in lines if line.strip() and not line.startswith("#")
+        )
+        reader = csv.reader(clean_lines, delimiter=delim)
+        for row in reader:
+            if not row:
+                continue
+
+            row_dict = {}
+            for i, val in enumerate(row):
+                val = val.strip()
+                if i < len(PERF_STAT_HEADERS) and val:
+                    row_dict[PERF_STAT_HEADERS[i]] = val
+
+            parsed.append(row_dict)
+
+        return parsed
+
+    @staticmethod
+    def _serialize_stats(merged_stats: ProjectStats) -> dict:
+        """Serialize merged statistics to JSON/YAML-compatible dictionaries.
+
+        The raw ``perf stat`` CSV output is converted to a list of
+        dictionaries with :meth:`_parse_perf_stat_csv`.
+
+        :param ProjectStats merged_stats: merged profiling statistics.
+        :return: serializable representation of the statistics.
+        :rtype: dict
+        """
+        return {
+            build: {
+                executable: {
+                    **dataclasses.asdict(stats),
+                    "perf_stat": (
+                        Profiler._parse_perf_stat_csv(stats.perf_stat.splitlines())
+                        if stats.perf_stat
+                        else None
+                    ),
+                }
+                for executable, stats in executables.items()
+            }
+            for build, executables in merged_stats.items()
+        }
+
+    @staticmethod
+    def _save_to_json(serialized_stats: dict, filepath: str) -> None:
+        """Save serialized statistics to a JSON file.
+
+        :param dict serialized_stats: serialized profiling statistics.
+        :param str filepath: destination filepath.
+        """
+        with open(filepath, "w", encoding="utf-8") as file:
+            json.dump(serialized_stats, file, indent=2, ensure_ascii=False)
+
+    @staticmethod
+    def _save_to_yaml(serialized_stats: dict, filepath: str) -> None:
+        """Save serialized statistics to a YAML file.
+
+        :param dict serialized_stats: serialized profiling statistics.
+        :param str filepath: destination filepath.
+        """
+        with open(filepath, "w", encoding="utf-8") as file:
+            yaml.safe_dump(serialized_stats, file, indent=4)
 
     def get_record_filename(self, executable: str) -> str:
         """Get perf record output file name."""
@@ -623,7 +742,7 @@ class Profiler:
         return f"{tool_base} taskset -c 0 sh -c '{executable}{redirects}'"
 
     def _perf_stat_command(self, executable: str, user_options: str, **kwargs):
-        fixed_options = "-x,"
+        fixed_options = "-x|"
         full_prefix = f"perf stat {user_options} {fixed_options}"
         return self._build_cmd(full_prefix.strip(), executable, **kwargs)
 

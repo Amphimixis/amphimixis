@@ -16,6 +16,20 @@ class Arch(StrEnum):
     ARM = "arm"
 
 
+class StatsFileFormat(StrEnum):
+    """Formats for human-readable profiling statistics files."""
+
+    JSON = "json"
+    YAML = "yaml"
+
+
+class CrossTableFormat(StrEnum):
+    """Console output formats for a performance cross-table."""
+
+    ORIGINAL = "original"
+    MARKDOWN = "markdown"
+
+
 # pylint: disable=too-many-instance-attributes
 @dataclass
 class ProfileStats:

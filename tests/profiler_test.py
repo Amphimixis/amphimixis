@@ -393,7 +393,7 @@ class TestProfiler:
 
         assert (
             profiler._perf_stat_command("/tmp/build/a.out", "-d")
-            == "perf stat -d -x, taskset -c 0 sh -c '/tmp/build/a.out 2>/dev/null'"
+            == "perf stat -d -x| taskset -c 0 sh -c '/tmp/build/a.out 2>/dev/null'"
         )
 
     def test_perf_record_command_builds_expected_prompt(self, get_shellmocked_profiler):

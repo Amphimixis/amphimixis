@@ -5,8 +5,20 @@ from argparse import ArgumentParser
 from amphimixis.amixis.commands.analyze import run_analyze
 from amphimixis.amixis.commands.build import run_build
 from amphimixis.amixis.commands.profile import run_profile
-from amphimixis.amixis.utils import add_config_arg, add_events_arg, add_path_arg
-from amphimixis.core.general import IUI, Project, ProjectStats, constants, tools
+from amphimixis.amixis.utils import (
+    add_config_arg,
+    add_events_arg,
+    add_path_arg,
+    add_stats_format_arg,
+)
+from amphimixis.core.general import (
+    IUI,
+    Project,
+    ProjectStats,
+    StatsFileFormat,
+    constants,
+    tools,
+)
 
 HELP_MESSAGE = "Run full pipeline: analyze, build and profile a project"
 
@@ -19,6 +31,7 @@ def add_args(parser: ArgumentParser) -> None:
     add_path_arg(parser)
     add_config_arg(parser)
     add_events_arg(parser)
+    add_stats_format_arg(parser)
 
 
 def show_profiling_result(project: Project) -> None:
@@ -83,7 +96,11 @@ def show_profiling_result(project: Project) -> None:
 
 
 def run_full_pipeline(
-    project: Project, config_file, ui: IUI, events: list | None = None
+    project: Project,
+    config_file,
+    ui: IUI,
+    events: list | None = None,
+    stats_format: StatsFileFormat = StatsFileFormat.JSON,
 ) -> bool:
     """Execute full pipeline: analyze, build, and profile a project.
 
@@ -91,6 +108,8 @@ def run_full_pipeline(
     :param str | Path config_file: Path to configuration file
     :param IUI ui: User interface for progress display
     :param list[str] | None events: List of perf events to record
+    :param StatsFileFormat stats_format: Format of the additional human-readable
+        perf stat file (``<project name>.json`` or ``<project name>.yaml``)
     :return: True if pipeline succeeded, False otherwise
     :rtype: bool
     """
@@ -100,7 +119,9 @@ def run_full_pipeline(
     if not run_build(project, str(config_file), ui):
         return False
 
-    if not run_profile(project, str(config_file), ui, events=events):
+    if not run_profile(
+        project, str(config_file), ui, events=events, stats_format=stats_format
+    ):
         return False
 
     show_profiling_result(project)

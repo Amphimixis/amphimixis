@@ -2,6 +2,7 @@
 
 """Amphimixis CLI tool for build automation and profiling."""
 
+import shutil
 import sys
 from pathlib import Path
 
@@ -36,14 +37,14 @@ def print_help(commands, full=False) -> None:
 
 
 # pylint: disable=too-many-branches
-def main() -> bool:
-    """Run the Amphimixis CLI tool.
+def _main() -> bool:
+    """There is an entry point the Amphimixis console utility.
 
     :return: True if command succeeded, False otherwise
     :rtype: bool
     """
     parser = create_parser()
-    args = parser.parse_args()
+    args, extra_args = parser.parse_known_args()
 
     if args.short_help:
         print_help(COMMANDS, False)
@@ -65,33 +66,60 @@ def main() -> bool:
         return False
 
     project = None
-    if args.command in ("run", "analyze", "build", "profile"):
+    if hasattr(args, "path"):
         if not args.path:
             parser.print_help()
             return False
         project = general.Project(str(Path(args.path).expanduser().resolve()))
 
-    config_file = None
+    config_file = DEFAULT_CONFIG_PATH
     if args.command in ("run", "build", "profile"):
-        config_file = DEFAULT_CONFIG_PATH
-        if args.config is not None:
-            config_file = Path(args.config).expanduser().resolve()
+        if args.config is None:
+            if not DEFAULT_CONFIG_PATH.exists():
+                script_dir = Path(__file__).parent.resolve()
+                shutil.copy(
+                    script_dir / ".." / "samples" / "local.yml",
+                    Path("input.yml").resolve(),
+                )
+                print("Created input.yml from samples/local.yml")
+        else:
+            config_file = Path(args.config).expanduser().resolve()  # type: ignore[arg-type]
 
     target_events = args.events if hasattr(args, "events") else None
     match args.command:
         case "init":
             return cmd.run_init(args.sample_name)
         case "run":
-            return cmd.run_full_pipeline(project, config_file, ui, events=target_events)
+            return cmd.run_full_pipeline(
+                project,
+                config_file,
+                ui,
+                events=target_events,
+                stats_format=args.stats_format,
+            )
         case "analyze":
+            if args.vector:
+                return cmd.run_vector_analyse(args.path, args.vector)
             return cmd.run_analyze(project, ui)
         case "build":
-            return cmd.run_build(project, config_file, ui)
+            return cmd.run_build(project, config_file, ui, build_name=args.build_name)
         case "profile":
-            return cmd.run_profile(project, config_file, ui, events=target_events)
+            return cmd.run_profile(
+                project,
+                config_file,
+                ui,
+                events=target_events,
+                build_name=args.build_name,
+                stats_format=args.stats_format,
+            )
         case "compare":
             return cmd.run_compare(
-                args.file1, args.file2, target_events, args.max_rows, ui
+                args.file1,
+                args.file2,
+                target_events,
+                args.max_rows,
+                ui,
+                cross_table_format=args.cross_table_format,
             )
         case "validate":
             return cmd.validate_cmd(args, ui)
@@ -99,10 +127,17 @@ def main() -> bool:
             return cmd.run_clean(args)
         case "add":
             return cmd.run_add(args)
+        case "opencode":
+            return cmd.run_opencode(args, extra_args)
         case _:
             parser.print_help()
             return False
 
 
 if __name__ == "__main__":
-    sys.exit(0 if main() else 1)
+    sys.exit(0 if _main() else 1)
+
+
+def main() -> bool:
+    """Reverse return value."""
+    return not _main()

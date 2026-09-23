@@ -21,20 +21,33 @@ Examples:
   amixis run /path/to/project --events cycles cache-misses
       → Run pipeline and profile only the 'cycles' and 'cache-misses' events.
 
+  amixis run /path/to/project --stats-format yaml
+      → Save perf stat data to <project name>.yaml instead of .json.
+
   amixis analyze /path/to/project
       → Analyzes the project and detects existing CI, tests, benchmarks, etc.
+  amixis analyze -v riscv ./build/bin/app
+      → Analyzes binary for RISC-V vector instructions (path is the binary)
 
   amixis build /path/to/project
       → Builds the project according to the generated configuration.
+  amixis build /path/to/project --build-name 1_2_1
+      → Builds only the named build from input.yml.
 
   amixis profile /path/to/project --events cycles
       → Profiles the project using specified perf events (e.g., cycles).
+  amixis profile /path/to/project --build-name 1_2_1
+      → Profiles only the named build from input.yml.
 
   amixis validate /path/to/input/config
       → Checks the correctness of the configuration file.
 
   amixis compare file1.scriptout file2.scriptout
       → Compares two perf output files (.scriptout) and displays the results.
+
+  amixis compare file1.scriptout file2.scriptout --cross-table-format md
+      → Compares two perf output files and prints cross-tables as Markdown.
+        Markdown is always saved to cross-tables/CT-<file1>-<file2>.md.
 
   amixis compare file1.scriptout file2.scriptout --events cycles
       → Compares two perf output files (.scriptout) using only the 'cycles' event.
@@ -66,20 +79,32 @@ EXAMPLES = {
   amixis run --config=config_file /path/to/project
       → Run with custom config file
   amixis run /path/to/project --events cycles cache-misses
-      → Run pipeline and profile only the 'cycles' and 'cache-misses' events""",
+      → Run pipeline and profile only the 'cycles' and 'cache-misses' events
+  amixis run /path/to/project --stats-format yaml
+      → Save perf stat data to <project name>.yaml instead of .json""",
     "analyze": """Examples:
   amixis analyze /path/to/project
-      → Analyze project and detect existing CI, tests, build systems, etc.""",
+      → Analyze project and detect existing CI, tests, build systems, etc.
+  amixis analyze -v riscv ./build/bin/app
+      → Analyze binary for RISC-V vector instructions
+  amixis analyze --vector x86 ./build/bin/app
+      → Analyze binary for x86/AVX vector instructions""",
     "build": """Examples:
   amixis build /path/to/project
       → Build project according to generated configuration files
   amixis build /path/to/project --config custom.yml
-      → Build with custom config file""",
+      → Build with custom config file
+  amixis build /path/to/project --build-name 1_2_1
+      → Build only the named build from input.yml""",
     "profile": """Examples:
   amixis profile /path/to/project
       → Profile performance of builds
   amixis profile /path/to/project --events cycles cache-misses
-      → Profile with specific perf events""",
+      → Profile with specific perf events
+  amixis profile /path/to/project --build-name 1_2_1
+      → Profile only the named build from input.yml
+  amixis profile /path/to/project --stats-format yaml
+      → Save perf stat data to <project name>.yaml instead of .json""",
     "validate": """Examples:
   amixis validate /path/to/input/config
       → Check config file correctness""",
@@ -89,7 +114,10 @@ EXAMPLES = {
   amixis compare file1.scriptout file2.scriptout --max-rows 10
       → Compare with max 10 rows per event
   amixis compare file1.scriptout file2.scriptout --events cycles
-      → Compare only the 'cycles' event""",
+      → Compare only the 'cycles' event
+  amixis compare file1.scriptout file2.scriptout --cross-table-format md
+      → Print cross-tables as Markdown (always saved to
+        cross-tables/CT-file1-file2.md)""",
     "clean": """Examples:
   amixis clean
       → Interactive mode: select builds to clean
@@ -102,6 +130,21 @@ EXAMPLES = {
       → Interactively create input.yml configuration file
   amixis add toolchain
       → Interactively add a toolchain to global config""",
+    "opencode": """Examples:
+  amixis opencode install
+      → Install Amphimixis agents, tools, and plugin into local .opencode/
+  amixis opencode install --global
+      → Install into XDG_CONFIG_HOME/opencode (~/.config/opencode)
+  amixis opencode uninstall
+      → Remove Amphimixis files from local .opencode/
+  amixis opencode uninstall --global
+      → Remove from XDG_CONFIG_HOME/opencode
+  amixis opencode
+      → Open Opencode TUI with the amphimixis agent
+  amixis opencode run "<your prompt>"
+      → Run non-interactively (package mode), print only text messages (requires jq)
+  amixis opencode run --no-processing-output "<your prompt>"
+      → Run non-interactively, print raw output (jq skipped)""",
 }
 
 

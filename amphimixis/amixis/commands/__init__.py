@@ -7,19 +7,21 @@ from amphimixis.amixis.commands import (
     clean,
     compare,
     init,
+    opencode,
     profile,
     run,
     validate,
 )
 
 COMMANDS = {
-    "init": init,
-    "run": run,
+    "add": add,
     "analyze": analyze,
     "build": build,
-    "profile": profile,
-    "validate": validate,
-    "compare": compare,
     "clean": clean,
-    "add": add,
+    "compare": compare,
+    "init": init,
+    "opencode": opencode,
+    "profile": profile,
+    "run": run,
+    "validate": validate,
 }

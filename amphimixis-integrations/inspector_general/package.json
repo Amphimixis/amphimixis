@@ -1,0 +1,9 @@
+{
+  "name": "inspector_general",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "inspector_general.ts",
+  "exports": {
+    ".": "./inspector_general.ts"
+  }
+}
