@@ -44,7 +44,7 @@ const AmphimixisInspector: Plugin = async ({ client }) => {
 
         if (!agent) {
           await WrapperForOpencode.sessionMtx.runExclusive(async () => {
-            agent = WrapperForOpencode.sessions[sessionId].lastUsedAgent;
+            agent = WrapperForOpencode.sessions[sessionId]?.lastUsedAgent;
           });
         }
 

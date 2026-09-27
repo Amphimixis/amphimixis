@@ -1,7 +1,9 @@
 import { tool } from '@opencode-ai/plugin';
 import path from 'node:path';
 
-export const amixis = () => '$AMIXIS_PATH';
+export const amixis: (() => string[]) = () => [
+  //$AMIXIS_PATH
+];
 
 export default tool({
   description:
@@ -13,7 +15,7 @@ export default tool({
   },
   async execute(args) {
     const projectDir = `./${path.basename(args.projectPath)}`;
-    const cmd = [amixis(), 'analyze', args.projectPath];
-    return (await Bun.$.cwd(projectDir)`${cmd}`.text()).trim();
+    const cmd = [...amixis(), 'analyze', args.projectPath];
+    return (await Bun.$`${cmd}`.text()).trim();
   },
 });
