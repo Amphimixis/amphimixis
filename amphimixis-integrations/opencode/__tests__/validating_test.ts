@@ -1,12 +1,16 @@
+import { describe, expect, spyOn, test } from "bun:test";
 import fs from "fs";
+import { mkdir, unlink } from "fs/promises";
 import path from "path";
 import { chdir } from "process";
-import { unlink, mkdir } from "fs/promises";
 import yaml from "yaml";
-import { test, expect, describe, spyOn } from "bun:test";
 import * as toolModule from "../tools/amphimixis-validate";
 
-const amixis = path.join(__dirname, "../../../.venv/bin/amixis");
+const amixis = [
+  "uv", "run",
+  "--project", path.join(__dirname, "../../.."),
+  "python3", path.join(__dirname, "../../../amphimixis/amixis/__main__.py")
+];
 spyOn(toolModule, "amixis").mockReturnValue(amixis);
 
 describe("Validating config file tool", () => {

@@ -1,7 +1,6 @@
 """Opencode install subcommand."""
 
 import shutil
-import string
 import subprocess
 from inspect import stack
 from pathlib import Path
@@ -121,8 +120,8 @@ def _get_amixis_path() -> str:
         src_dir = (
             amixis_executable_path.parent.parent.parent
         )  # {repo_path}/amphimixis/amixis/__main__.py
-        return f"uv --project {src_dir} run python {str(amixis_executable_path)}"
-    return str(amixis_executable_path)
+        return f"'uv', '--project', '{src_dir}', 'run', 'python', '{str(amixis_executable_path)}'"
+    return f"'{str(amixis_executable_path)}'"
 
 
 def _substitute_amixis_path(tools_dir: Path) -> None:
@@ -137,9 +136,7 @@ def _substitute_amixis_path(tools_dir: Path) -> None:
     amixis_executable_path = _get_amixis_path()
     for tool_file in tools_dir.glob("*.ts"):
         content = tool_file.read_text(encoding="utf-8")
-        if "$AMIXIS_PATH" not in content:
+        if "//$AMIXIS_PATH" not in content:
             continue
-        content = string.Template(content).safe_substitute(
-            AMIXIS_PATH=amixis_executable_path
-        )
+        content = content.replace("//$AMIXIS_PATH", amixis_executable_path)
         tool_file.write_text(content, encoding="utf-8")
