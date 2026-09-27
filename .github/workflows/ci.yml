@@ -38,7 +38,7 @@ jobs:
           perf --version
           curl -fsSL https://bun.com/install | bash
           source ~/.bash_profile
-          bun install yaml @opencode-ai/plugin
+          bun install yaml @opencode-ai/plugin eslint@latest @eslint/js@latest @typescript-eslint/parser @typescript-eslint/eslint-plugin
       - name: Run linters
         run: |
           shellcheck ci/*.sh

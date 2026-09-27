@@ -19,6 +19,7 @@ _BUN_DEPENDENCIES = [
     "remark-parse",
     "remark-gfm",
     "node-jq",
+    "mdast-util-gfm-table",
 ]
 
 

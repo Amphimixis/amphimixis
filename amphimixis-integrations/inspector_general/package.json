@@ -5,5 +5,8 @@
   "main": "inspector_general.ts",
   "exports": {
     ".": "./inspector_general.ts"
+  },
+  "dependencies": {
+    "mdast-util-gfm-table": "^2.0.0"
   }
 }
