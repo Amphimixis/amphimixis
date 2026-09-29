@@ -24,7 +24,7 @@ else
 You are applying the Amphimixis migration readiness pipeline to the single project "${PROJECT_NAME}" inside this disposable container.
 
 CONTEXT:
-- Reference platform: x86_64 (the local container machine). There is no second platform — target architecture is the same x86_64.
+- Reference platform: x86_64 (the local container machine). Target platform can be either x86_64 or riscv (if target platform is different from build platform and does not contain address -- use cross-compilation tools and qemu-user emulation).
 - The Amphimixis config file input.yml is ALREADY provided in the current working directory (/work).
 - ${REPO_INSTRUCTION}
 - Working workspace: /work/${PROJECT_NAME}-workspace.
