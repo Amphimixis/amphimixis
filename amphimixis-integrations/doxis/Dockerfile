@@ -10,6 +10,8 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         bash coreutils git curl jq ca-certificates \
         build-essential g++ gcc cmake make ninja-build pkg-config \
+        gcc-riscv64-linux-gnu g++-riscv64-linux-gnu \
+        qemu-user-static \
         python3 python3-pip python3-venv \
         rsync sshpass time \
         unzip \
@@ -17,6 +19,8 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/* \
     && rm -f /usr/bin/perf \
     && ln -s /usr/lib/linux-tools/*/perf /usr/bin/perf
+
+RUN qemu-riscv64-static --version && riscv64-linux-gnu-g++ --version
 
 RUN curl -fsSL https://bun.sh/install | bash
 ENV BUN_INSTALL=/root/.bun
