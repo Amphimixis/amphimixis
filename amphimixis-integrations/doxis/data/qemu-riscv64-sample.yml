@@ -1,0 +1,25 @@
+platforms:
+- id: 1
+  arch: x86
+- id: 2
+  arch: riscv
+recipes:
+- id: 1
+  config_flags: -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBUILD_TESTING=ON
+  compiler_flags:
+    c_flags: -O3 -march=native -g
+    cxx_flags: -O3 -march=native -g
+  jobs: 4
+- id: 2
+  config_flags: -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBUILD_TESTING=ON -DCMAKE_C_COMPILER=/usr/bin/riscv64-linux-gnu-gcc -DCMAKE_CXX_COMPILER=/usr/bin/riscv64-linux-gnu-g++
+  compiler_flags:
+    c_flags: -O3 -march=rv64gc -g
+    cxx_flags: -O3 -march=rv64gc -g
+  jobs: 4
+builds:
+- build_machine: 1
+  run_machine: 1
+  recipe_id: 1
+- build_machine: 1
+  run_machine: 2
+  recipe_id: 2
