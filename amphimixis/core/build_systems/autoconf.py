@@ -90,14 +90,14 @@ class Autoconf(BuildSystem, IHighLevelBuildSystem):
         )
         if error != 0:
             return None
-        for line in stdout[0]:
-            path = line.strip()
-            if path:
-                return os.path.dirname(path)
-        return None
+        candidates = [line.strip() for line in stdout[0] if line.strip()]
+        if not candidates:
+            return None
+        top_level = min(candidates, key=lambda path: (path.count(os.sep), path))
+        return os.path.dirname(top_level)
 
     def _generate_configure(self, shell: Shell, autoconf_dir: str):
-        """Generate the configure script with autogen.sh or autoreconf.
+        """Generate the configure script with autogen.sh, bootstrap or autoreconf.
 
         :param Shell shell: Shell connected to the build machine.
         :param str autoconf_dir: Absolute path to the Autoconf project directory.
@@ -108,7 +108,13 @@ class Autoconf(BuildSystem, IHighLevelBuildSystem):
         if marker == 0:
             gen_cmd = f"cd {autoconf_dir} && ./autogen.sh"
         else:
-            gen_cmd = f"cd {autoconf_dir} && autoreconf --install"
+            marker, _, _ = shell.run(
+                f"test -f {os.path.join(autoconf_dir, 'bootstrap')}"
+            )
+            if marker == 0:
+                gen_cmd = f"cd {autoconf_dir} && ./bootstrap"
+            else:
+                gen_cmd = f"cd {autoconf_dir} && autoreconf --install"
         _logger.info("Run generating configure script: %s", gen_cmd)
         return shell.run(gen_cmd)
 
