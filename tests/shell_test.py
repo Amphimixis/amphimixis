@@ -97,7 +97,7 @@ class TestShell:
         assert stdout == [["hello\n", "world\n"]]
         assert stderr == [["warn\n"]]
         assert handler.commands == [
-            "echo test 0<&-",
+            "echo test 0</dev/null",
             READING_BARRIER_STDOUT,
             READING_BARRIER_STDERR,
         ]
@@ -116,7 +116,7 @@ class TestShell:
         assert stdout == [[]]
         assert stderr == [[]]
         assert handler.commands == [
-            "false 0<&-",
+            "false 0</dev/null",
             READING_BARRIER_STDOUT,
             READING_BARRIER_STDERR,
         ]
