@@ -40,7 +40,7 @@ The **platforms** section describes the machines on which the project will be bu
 |                password[^4]               |     string      | (**Optional**) Password for the remote machine |
 |                   qemu                    | boolean or dict | (**Optional**) Provision a local QEMU VM       |
 
-See the [config_qemu.md](./config_qemu.md)
+See the [Configuration Qemu Guide](./config_qemu.md).
 
 > **Note:**
 >

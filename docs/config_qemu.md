@@ -1,13 +1,13 @@
-# The `qemu` option in platform configuration
+# Qemu Option Guide
 
 The `qemu` option in the `platforms` section of `input.yml` enables
 automatic provisioning of a local QEMU virtual machine
 for building on it.
 
-For the general configuration structure see
-[config_instruction.md](./config_instruction.md) and the example
-[./input.yml](./input.yml). A full QEMU example is available in
-`amphimixis/samples/qemu.yml`.
+For the general configuration structure see the
+[Configuration File Guide](./config_instruction.md) and the example
+[Example Configuration File](./input.yml). A full QEMU example is available in
+[Sample With Qemu Option](amphimixis/samples/qemu.yml).
 
 ## Quick overview
 
