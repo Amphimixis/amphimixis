@@ -2,8 +2,7 @@
 # Environment:
 #   PROJECT_NAME   source-package / project name (required)
 #   PROJECT_REPO   optional explicit GitHub URL (overrides the agent's search)
-#   PIPELINE_PROMPT plain-text pipeline prompt that overrides the
-#                  generated one
+#   PIPELINE_PROMPT additional prompt to the agent
 #   MODEL          opencode model in the form provider/model (default: opencode/big-pickle)
 #   OPENCODE_CONFIG  path to an optional opencode config file (opencode env var)
 set -euo pipefail
@@ -12,15 +11,18 @@ set -euo pipefail
 MODEL="${MODEL:-opencode/big-pickle}"
 
 if [ -n "${PIPELINE_PROMPT:-}" ]; then
-  PROMPT="${PIPELINE_PROMPT}"
+  ADDITIONAL_PROMPT="${PIPELINE_PROMPT}"
 else
-  if [ -n "${PROJECT_REPO:-}" ]; then
-    REPO_INSTRUCTION="The project repository URL is ${PROJECT_REPO}. Clone exactly this URL into the workspace. Do not search for a different repository."
-  else
-    REPO_INSTRUCTION="Search GitHub/GitLab for the active repository of the source package \"${PROJECT_NAME}\" (prefer the repo with the latest commits and tags, the most stars and an active upstream). Take the resolved clone URL and record it in the report. If no clearly matching repository exists, document that and finish the report marking the data as NOT AVAILABLE."
-  fi
+  ADDITIONAL_PROMPT=""
+fi
 
-  PROMPT="$(cat <<EOF
+if [ -n "${PROJECT_REPO:-}" ]; then
+  REPO_INSTRUCTION="The project repository URL is ${PROJECT_REPO}. Clone exactly this URL into the workspace. Do not search for a different repository."
+else
+  REPO_INSTRUCTION="Search GitHub/GitLab for the active repository of the source package \"${PROJECT_NAME}\" (prefer the repo with the latest commits and tags, the most stars and an active upstream). Take the resolved clone URL and record it in the report. If no clearly matching repository exists, document that and finish the report marking the data as NOT AVAILABLE."
+fi
+
+PROMPT="$(cat <<EOF
 You are applying the Amphimixis migration readiness pipeline to the single project "${PROJECT_NAME}" inside this disposable container.
 
 CONTEXT:
@@ -34,9 +36,11 @@ RULES:
 - improvements.json, cross-tables/CT-*.md and the saved profile JSON/YAML/pkl are tool-owned and read-only for you.
 - Do not read pipeline.log file.
 - When every phase is finished and the report is saved, print exactly the line: WORK ON THE ${PROJECT_NAME} IS COMPLETED
+
+ADDITIONAL INSTRUCTIONS:
+- ${ADDITIONAL_PROMPT}
 EOF
 )"
-fi
 
 cd /work
 
