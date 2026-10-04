@@ -87,7 +87,7 @@ def validate(config_file_path: str, ui: IUI = NULL_UI) -> bool:
     return _errors_count == 0
 
 
-# pylint: disable = R0912
+# pylint: disable = too-many-branches
 def _is_valid_platform(platform: dict[str, Any]):
     """Check whether platform is valid."""
     pl_id = platform.get("id")
@@ -111,18 +111,22 @@ def _is_valid_platform(platform: dict[str, Any]):
     if not isinstance(password, int | str | None):
         _notify_about_error(f"Invalid `password` in platform {pl_id}: {password}")
 
-    port = platform.get("port", DEFAULT_PORT)
+    port = platform.get("port", DEFAULT_SSH_PORT)
     if not isinstance(port, int) or not 1 <= port <= 65535:
         _notify_about_error(f"Invalid `port` in platform {pl_id}: {port}")
+
+    if "qemu" not in platform:
+        return
 
     qemu = platform.get("qemu")
     qemu_enabled = qemu is True or isinstance(qemu, dict)
 
-    if qemu is None or qemu is False:
-        pass  # qemu absent or explicitly disabled
-    elif not qemu:
+    if qemu is False:
+        return
+    if qemu is None or qemu == {}:
         _notify_about_error(f"Qemu configuration is empty or invalid: {qemu}")
-    elif qemu_enabled:
+        return
+    if qemu_enabled:
         if isinstance(qemu, dict):
             pl_id_str = str(pl_id) if pl_id is not None else "unknown"
             _is_valid_qemu(pl_id_str, qemu)
@@ -135,11 +139,9 @@ def _is_valid_platform(platform: dict[str, Any]):
             )
     else:
         _notify_about_error(f"Invalid qemu value: {qemu}: expected true or a dict")
-
-    if not qemu_enabled:
         return
 
-    files_provided = _qemu_files_provided(qemu)
+    files_provided = isinstance(qemu, dict) and _qemu_files_provided(qemu)
     if files_provided:
         if not isinstance(username, str) or not username:
             _notify_about_error(
@@ -159,10 +161,10 @@ def _is_valid_platform(platform: dict[str, Any]):
         )
 
 
-def _qemu_files_provided(qemu: Any) -> bool:
+def _qemu_files_provided(qemu: dict) -> bool:
     """Check whether the qemu config specifies any custom VM files.
 
-    :param Any qemu: QEMU configuration (bool or dict).
+    :param dict qemu: QEMU configuration.
     :return: True if kernel, initrd, or disk_image are specified.
     :rtype: bool
     """
@@ -198,16 +200,22 @@ def _is_valid_qemu(pl_id: int | str | None, qemu: dict[str, int | str]) -> None:
     kernel = qemu.get("kernel")
     if not isinstance(kernel, str | None):
         _notify_about_error(f"Invalid qemu.kernel in platform {pl_id}: {kernel}")
+    elif kernel and not path.isfile(kernel):
+        _notify_about_error(f"QEMU kernel is not a file: {kernel}")
 
     initrd = qemu.get("initrd")
     if not isinstance(initrd, str | None):
         _notify_about_error(f"Invalid qemu.initrd in platform {pl_id}: {initrd}")
+    elif initrd and not path.isfile(initrd):
+        _notify_about_error(f"QEMU initrd is not a file: {initrd}")
 
     disk_image = qemu.get("disk_image")
     if not isinstance(disk_image, str | None):
         _notify_about_error(
             f"Invalid qemu.disk_image in platform {pl_id}: {disk_image}"
         )
+    elif disk_image and (not path.exists(disk_image) or path.isdir(disk_image)):
+        _notify_about_error(f"QEMU disk image is not a file: {disk_image}")
 
     keep_alive = qemu.get("keep_alive")
     if keep_alive is not None and not isinstance(keep_alive, bool):
