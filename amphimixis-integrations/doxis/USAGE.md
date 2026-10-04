@@ -60,6 +60,36 @@ Example:
 ./rebuild-and-run.sh projects --limit 1 --config my-opencode.json --model opencode/big-pickle
 ```
 
+### Via the `amixis` CLI
+
+From a repository checkout, the same pipeline is available as
+`amixis doxis` subcommands:
+
+```bash
+amixis doxis build-image
+amixis doxis run projects --limit 1 --config my-opencode.json --model opencode/big-pickle
+amixis doxis run build-image projects --skip 2
+AMPHIMIXIS_IMAGE=my-tag amixis doxis run projects
+```
+
+- Bare `amixis doxis` prints usage.
+- `amixis doxis build-image [--image TAG]` builds the image only.
+- `amixis doxis run <list-file> [flags]` runs the pipeline and never
+  builds (fails if the image is missing — build it first).
+- `amixis doxis run build-image <list-file> [flags]` builds the image
+  and then runs the pipeline.
+- `run` accepts `--limit/--skip/--repo/--config/--model/--prompt/` `--extra-docker/--image`;
+  `build-image` accepts only `--image`.
+
+Notes:
+
+- `amixis doxis` forwards to `run.sh` / `rebuild-and-run.sh`, so
+  `docker` and a repo checkout are still required (it is not available
+  from a pip-installed wheel without the checkout).
+- `--image TAG` overrides `$AMPHIMIXIS_IMAGE` for this run.
+- Values starting with `-` need the `=` form:
+  `--extra-docker=--privileged`.
+
 Arguments:
 
 | Argument | Meaning |
