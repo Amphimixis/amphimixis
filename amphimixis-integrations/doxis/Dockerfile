@@ -20,6 +20,10 @@ RUN apt-get update \
     && rm -f /usr/bin/perf \
     && ln -s /usr/lib/linux-tools/*/perf /usr/bin/perf
 
+RUN mkdir -p /usr/libexec/perf-core \
+    && curl -fsSL https://raw.githubusercontent.com/torvalds/linux/master/tools/perf/perf-archive.sh -o /usr/libexec/perf-core/perf-archive \
+    && chmod +x /usr/libexec/perf-core/perf-archive
+
 RUN qemu-riscv64-static --version && riscv64-linux-gnu-g++ --version
 
 RUN curl -fsSL https://bun.sh/install | bash
