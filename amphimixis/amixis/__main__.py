@@ -20,7 +20,8 @@ def print_help(commands, full=False) -> None:
     :param bool full: Whether to show full help with examples
     """
     print(
-        "amixis [-h] {run, analyze, build, profile, validate, compare, clean, add} ...\n"
+        # pylint: disable-next=line-too-long
+        "amixis [-h] {run, analyze, build, profile, validate, compare, clean, add, doxis, opencode} ...\n"
     )
     print(
         "Amphimixis — an automated project intelligence and evaluation tool\n"
@@ -129,6 +130,8 @@ def _main() -> bool:
             return cmd.run_add(args)
         case "opencode":
             return cmd.run_opencode(args, extra_args)
+        case "doxis":
+            return cmd.run_doxis(args)
         case _:
             parser.print_help()
             return False
