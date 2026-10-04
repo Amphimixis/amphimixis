@@ -2,31 +2,31 @@
 # Build from the repository root (needed to COPY amphimixis sources):
 #   docker build -f amphimixis-integrations/doxis/Dockerfile -t amphimixis-opencode:latest .
 
-FROM ubuntu:24.04
+FROM ubuntu:26.04
 
 ENV DEBIAN_FRONTEND=noninteractive
+ENV PIP_BREAK_SYSTEM_PACKAGES=1
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         bash coreutils git curl jq ca-certificates \
         build-essential g++ gcc cmake make ninja-build pkg-config \
         gcc-riscv64-linux-gnu g++-riscv64-linux-gnu \
-        qemu-user-static \
+        qemu-user-hwe \
         python3 python3-pip python3-venv \
         rsync sshpass time \
         unzip \
-        linux-tools-generic linux-tools-common \
-    && rm -rf /var/lib/apt/lists/* \
-    && rm -f /usr/bin/perf \
-    && ln -s /usr/lib/linux-tools/*/perf /usr/bin/perf
+        linux-perf linux-tools-common linux-tools-generic-hwe-26.04 \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p /usr/libexec/perf-core \
     && curl -fsSL https://raw.githubusercontent.com/torvalds/linux/master/tools/perf/perf-archive.sh -o /usr/libexec/perf-core/perf-archive \
     && chmod +x /usr/libexec/perf-core/perf-archive
 
-RUN qemu-riscv64-static --version && riscv64-linux-gnu-g++ --version
+RUN qemu-riscv64 --version && riscv64-linux-gnu-g++ --version
 
-RUN curl -fsSL https://bun.sh/install | bash
+RUN curl -fsSL https://bun.sh/install | bash \
+    && ln -sf /root/.bun/bin/bun /usr/local/bin/bun
 ENV BUN_INSTALL=/root/.bun
 ENV PATH="/root/.bun/bin:${PATH}"
 
@@ -34,7 +34,7 @@ RUN curl -fsSL https://opencode.ai/install | bash -s -- --version 1.18.30
 ENV PATH="/root/.opencode/bin:${PATH}"
 
 COPY . /opt/amphimixis-repo
-RUN pip3 install --break-system-packages /opt/amphimixis-repo \
+RUN pip3 install /opt/amphimixis-repo \
     && rm -rf /opt/amphimixis-repo
 
 RUN amixis opencode install --global
