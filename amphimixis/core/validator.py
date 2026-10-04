@@ -17,10 +17,9 @@ from amphimixis.core.general import (
     CompilerFlagsAttrs,
     ToolchainAttrs,
 )
+from amphimixis.core.general.constants import DEFAULT_SSH_PORT
 from amphimixis.core.laboratory_assistant import LaboratoryAssistant
 from amphimixis.core.logger import setup_logger
-
-DEFAULT_PORT = 22
 
 _errors_count = 0
 

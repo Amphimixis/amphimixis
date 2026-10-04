@@ -24,7 +24,6 @@ platforms:
     arch: x86
     username: root
     password: root
-    port: 3333
     qemu:
       machine: pc
       memory: 4
@@ -153,8 +152,9 @@ For `riscv` with default files the following is added to the command:
   or `localhost` are allowed. It can be omitted entirely — Amphimixis
   substitutes `127.0.0.1` itself.
 - `port`: the host port forwarded to the guest SSH port 22
-  (`hostfwd=tcp:127.0.0.1:<port>-:22`). Default is `2222`.
-  Different QEMU platforms must use different ports.
+  (`hostfwd=tcp:127.0.0.1:<port>-:22`). When it is omitted or already
+  busy, Amphimixis picks a free port automatically, so different QEMU
+  platforms can share the same (or no) configured `port`.
 - `username` / `password`: for auto-download, `root` / `root` are used
   and enforced — the default images only support these credentials
   (any provided values are ignored with a warning).

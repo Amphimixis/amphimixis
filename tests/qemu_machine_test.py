@@ -87,6 +87,13 @@ class TestBuildQemuCommand:
         assert "-smp 2" in cmd
         assert "hostfwd=tcp:127.0.0.1:3333-:22" in cmd
 
+    def test_guest_port_is_always_22(self):
+        """Host port varies, guest side of hostfwd is fixed at 22."""
+        machine = _machine(Arch.X86, QemuConfig(), port=4444)
+        cmd = " ".join(QemuMachineProvisioner(machine)._build_qemu_command())
+
+        assert "hostfwd=tcp:127.0.0.1:4444-:22" in cmd
+
     def test_disk_image_adds_snapshot_drive(self, tmp_path):
         """disk_image adds a snapshot=on drive; missing file raises."""
         disk = tmp_path / "image.qcow2"

@@ -4,6 +4,7 @@
 # projects on x86 and RISC-V architectures.
 #
 # Note: When qemu is enabled, address is fixed to 127.0.0.1 (local VM)
+# The host port forwarded to the guest is picked automatically when omitted.
 
 platforms:
 - id: 1
@@ -11,14 +12,12 @@ platforms:
   address: 127.0.0.1
   username: root
   password: root
-  port: 2222
   qemu: true
 
 - id: 2
   arch: x86
   username: root
   password: root
-  port: 3333
   qemu:
     machine: pc
     memory: 4

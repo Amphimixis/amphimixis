@@ -7,8 +7,8 @@ import time
 from pathlib import Path
 
 from amphimixis.core.general import IUI, NULL_UI, MachineInfo
+from amphimixis.core.general.constants import QEMU_GUEST_SSH_PORT
 from amphimixis.core.logger import setup_logger
-from amphimixis.core.validator import DEFAULT_PORT
 
 _logger = setup_logger("qemu_provisioner")
 
@@ -72,15 +72,17 @@ class QemuMachineProvisioner:
         :param int timeout: Maximum time to wait for VM to become ready.
         """
         if self._process is not None:
+            assert self._machine.auth is not None
             _logger.warning(
                 "VM already running on port %d",
-                self._machine.auth.port if self._machine.auth else DEFAULT_PORT,
+                self._machine.auth.port,
             )
             return
 
         self._prepare_files()
 
-        port = self._machine.auth.port if self._machine.auth else DEFAULT_PORT
+        assert self._machine.auth is not None
+        port = self._machine.auth.port
         self._ui.update_message("QEMU", f"Starting VM on port {port}...")
 
         qemu_cmd = self._build_qemu_command()
@@ -240,7 +242,8 @@ class QemuMachineProvisioner:
                     raise FileNotFoundError(f"Initrd not found: {self._config.initrd}")
                 cmd.extend(["-initrd", str(self._config.initrd)])
 
-        port = self._machine.auth.port if self._machine.auth else DEFAULT_PORT
+        assert self._machine.auth is not None
+        host_port = self._machine.auth.port
 
         net_device = (
             "virtio-net-pci,netdev=net" if is_x86 else "virtio-net-device,netdev=net"
@@ -250,7 +253,7 @@ class QemuMachineProvisioner:
                 "-device",
                 net_device,
                 "-netdev",
-                f"user,id=net,hostfwd=tcp:127.0.0.1:{port}-:{DEFAULT_PORT}",
+                f"user,id=net,hostfwd=tcp:127.0.0.1:{host_port}-:{QEMU_GUEST_SSH_PORT}",
             ]
         )
 

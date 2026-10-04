@@ -111,6 +111,8 @@ builds:
 [^2]: `Make` and `Ninja` are supported as runners (low-level build system). If not specified, it is automatically selected from the supported runners of the selected build system.
 
 [^3]: Default value: 22. The `port` must be within the range 1-65535.
+For QEMU platforms it is the host port forwarded to the guest SSH port;
+if the configured port is busy or omitted, a free port is chosen automatically.
 
 [^4]: If the user uses SSH keys, start `ssh-agent` in the current shell and add the required keys for each remote machine manually with `ssh-add` before running Amphimixis. In this case, the password does not need to be provided. **Please note that passwords are passed to SSH through sshpass, which is not secure.**
 

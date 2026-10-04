@@ -358,6 +358,49 @@ class TestQemuProvisioning:
         mock_provisioner.assert_not_called()
         assert configurator._qemu_provisioners == {}
 
+    def test_resolve_host_port_keeps_free_explicit_port(self):
+        """An explicitly set free port is kept as-is."""
+        with patch.object(configurator.tools, "is_port_free", return_value=True):
+            resolved = configurator._resolve_qemu_host_port({"id": 1, "port": 4444})
+
+        assert resolved == 4444
+
+    def test_resolve_host_port_falls_back_when_busy(self):
+        """A busy explicit port triggers a free-port fallback."""
+        with (
+            patch.object(configurator.tools, "is_port_free", return_value=False),
+            patch.object(configurator.tools, "find_free_port", return_value=5555),
+        ):
+            resolved = configurator._resolve_qemu_host_port({"id": 1, "port": 4444})
+
+        assert resolved == 5555
+
+    def test_resolve_host_port_when_unset(self):
+        """A missing port is resolved to a free one."""
+        with patch.object(configurator.tools, "find_free_port", return_value=6666):
+            resolved = configurator._resolve_qemu_host_port({"id": 1})
+
+        assert resolved == 6666
+
+    def test_provision_writes_resolved_port_back(self):
+        """Resolved port is stored in input_config for later create_machine."""
+        input_config = {"platforms": [{"id": 1, "arch": "x86", "qemu": True}]}
+        provisioner = MagicMock()
+        provisioner.is_default_image = False
+        provisioner.uses_default_files = True
+
+        with (
+            patch.object(configurator.tools, "find_free_port", return_value=7777),
+            patch(
+                "amphimixis.core.configurator.QemuMachineProvisioner",
+                return_value=provisioner,
+            ),
+        ):
+            result = configurator.provision_qemu_machines(input_config)
+
+        assert result is True
+        assert input_config["platforms"][0]["port"] == 7777
+
     def test_cleanup_qemu_machines_respects_keep_alive(self):
         """Cleanup stops regular VMs but keeps keep_alive ones."""
         regular = MagicMock()

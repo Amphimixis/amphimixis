@@ -17,12 +17,12 @@ from amphimixis.core.general import (
     general,
     tools,
 )
-from amphimixis.core.general.constants import ANALYZED_FILE_NAME
+from amphimixis.core.general.constants import ANALYZED_FILE_NAME, DEFAULT_SSH_PORT
 from amphimixis.core.laboratory_assistant import LaboratoryAssistant
 from amphimixis.core.logger import setup_logger
 from amphimixis.core.qemu_machine import QemuMachineProvisioner
 from amphimixis.core.shell import Shell
-from amphimixis.core.validator import DEFAULT_PORT, validate
+from amphimixis.core.validator import validate
 
 _logger = setup_logger("configurator")
 INVITING_NAME = "Config"
@@ -55,6 +55,7 @@ def provision_qemu_machines(input_config: dict[str, Any], ui: IUI = NULL_UI) -> 
 
         provisioner: QemuMachineProvisioner | None = None
         try:
+            platform["port"] = _resolve_qemu_host_port(platform)
             machine = create_machine(platform)
             provisioner = QemuMachineProvisioner(machine, ui)
             provisioner.start()
@@ -94,6 +95,29 @@ def provision_qemu_machines(input_config: dict[str, Any], ui: IUI = NULL_UI) -> 
         _qemu_provisioners[pl_id] = provisioner
 
     return True
+
+
+def _resolve_qemu_host_port(platform: dict[str, Any]) -> int:
+    """Pick the local host port forwarded to the QEMU guest SSH port.
+
+    Uses the configured 'port' when it is free, otherwise (or when
+    'port' is not set) selects a free ephemeral port.
+
+    :param dict platform: Platform dictionary from the input config.
+    :return: Free host port to forward to the guest.
+    :rtype: int
+    """
+    raw_port = platform.get("port")
+    if raw_port is not None:
+        port = int(raw_port)
+        if tools.is_port_free(port):
+            return port
+        _logger.warning(
+            "Port %d for qemu platform %s is busy; picking a free port",
+            port,
+            platform.get("id"),
+        )
+    return tools.find_free_port()
 
 
 def _get_required_packages(
@@ -315,8 +339,7 @@ def _has_valid_arch(
     project: general.Project, machine: general.MachineInfo, ui: IUI = NULL_UI
 ) -> bool:
     """Check whether run machine arch is valid."""
-    qemu_enabled = machine.qemu is not None
-    if machine.address is None and not qemu_enabled:
+    if machine.address is None and machine.qemu is None:
         if machine.arch.lower() not in local_arch().lower():
             _logger.error(
                 "Invalid local machine arch: %s, your machine is %s",
@@ -414,7 +437,8 @@ def create_machine(machine_info: dict[str, Any]) -> general.MachineInfo:
         # qemu works with localhost (127.0.0.1); validated upstream
         address = "127.0.0.1"
 
-        port = int(machine_info.get("port", DEFAULT_PORT))
+        raw_port = machine_info.get("port")
+        port = int(raw_port) if raw_port is not None else tools.find_free_port()
 
         files_provided = isinstance(qemu_info, dict) and any(
             qemu_info.get(key) for key in ("kernel", "initrd", "disk_image")
@@ -455,7 +479,7 @@ def create_machine(machine_info: dict[str, Any]) -> general.MachineInfo:
             username = str(machine_info.get("username"))
             raw_password = machine_info.get("password")
             password = str(raw_password) if raw_password is not None else None
-            port = int(machine_info.get("port", DEFAULT_PORT))
+            port = int(machine_info.get("port", DEFAULT_SSH_PORT))
 
             if username is not None:
                 auth = general.MachineAuthenticationInfo(str(username), password, port)
@@ -465,7 +489,7 @@ def create_machine(machine_info: dict[str, Any]) -> general.MachineInfo:
     return machine
 
 
-def create_qemu_config(qemu_info: Any) -> general.QemuConfig:
+def create_qemu_config(qemu_info: dict[str, Any]) -> general.QemuConfig:
     """Create QEMU configuration.
 
     :param dict qemu_info: Dictionary with QEMU configuration options.
