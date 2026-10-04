@@ -23,7 +23,7 @@ from amphimixis.core.general import (
 _commands_args: dict[str, dict[str, str]] = {
     "stat": {
         "cmd": "perf stat",
-        "opt": "-ddd -x|",
+        "opt": "-ddd -x\\|",
         "cpu_affinity": "taskset -c 0",
     },
     "record": {"cmd": "perf record", "cpu_affinity": "taskset -c 0"},
@@ -741,7 +741,7 @@ class Profiler:
         return f"{tool_base} taskset -c 0 sh -c '{executable}{redirects}'"
 
     def _perf_stat_command(self, executable: str, user_options: str, **kwargs):
-        fixed_options = "-x|"
+        fixed_options = "-x\\|"
         full_prefix = f"perf stat {user_options} {fixed_options}"
         return self._build_cmd(full_prefix.strip(), executable, **kwargs)
 
