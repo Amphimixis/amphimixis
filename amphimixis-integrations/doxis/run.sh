@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Usage:
 #   run.sh <list-file> [--limit N] [--skip M] [--config PATH] [--model PROVIDER/MODEL]
+#                      [--workdir DIR]
 set -euo pipefail
 
 DOXIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -13,9 +14,10 @@ limit=""
 skip="0"
 config_file=""
 model=""
+workdir=""
 
 usage() {
-  sed -n '2,3p' "$0"
+  sed -n '2,4p' "$0"
   exit 1
 }
 
@@ -25,6 +27,7 @@ while [ "$#" -gt 0 ]; do
     --skip) skip="${2:?}"; shift 2 ;;
     --config) config_file="${2:?}"; shift 2 ;;
     --model) model="${2:?}"; shift 2 ;;
+    --workdir) workdir="${2:?}"; shift 2 ;;
     --extra-docker) EXTRA_DOCKER_ARGS+=("$2"); shift 2 ;;
     -h|--help) usage ;;
     -*) echo "unknown option: $1" >&2; usage ;;
@@ -48,6 +51,12 @@ if [ -n "$config_file" ]; then
   config_file="$(readlink -f "$config_file")"
 fi
 
+if [ -n "$workdir" ]; then
+  [ -e "$workdir" ] && [ ! -d "$workdir" ] && { echo "workdir is not a directory: $workdir" >&2; exit 2; }
+  mkdir -p "$workdir"
+  workdir="$(readlink -f "$workdir")"
+fi
+
 mapfile -t projects < <(awk 'NF { print $1 }' "$list_file")
 
 if [ "${#projects[@]}" -gt 0 ]; then
@@ -58,16 +67,27 @@ if [ "${#projects[@]}" -gt 0 ]; then
   fi
 fi
 
-mkdir -p "$DOXIS_DIR/work"
+WORK_BASE="$DOXIS_DIR/work"
+RESUME=0
+if [ -n "$workdir" ]; then
+  if [ "${#projects[@]}" -eq 1 ]; then
+    RESUME=1
+  else
+    WORK_BASE="$workdir"
+  fi
+else
+  mkdir -p "$WORK_BASE"
+fi
+
 touch "$DOXIS_DIR/state"
 
 next_work_dir() {
   local project="$1"
   local i=1
-  while [ -e "$DOXIS_DIR/work/${project}_${i}" ]; do
+  while [ -e "$WORK_BASE/${project}_${i}" ]; do
     i=$((i + 1))
   done
-  printf '%s' "$DOXIS_DIR/work/${project}_${i}"
+  printf '%s' "$WORK_BASE/${project}_${i}"
 }
 
 for project in "${projects[@]}"; do
@@ -77,15 +97,26 @@ for project in "${projects[@]}"; do
     continue
   fi
 
-  work_dir="$(next_work_dir "$project")"
-  mkdir -p "$work_dir"
-  echo "== $(date '+%F %T') pipeline: $project -> $(basename "$work_dir") =="
+  project_dir=""
+  resume_mode=0
+  if [ "$RESUME" -eq 1 ]; then
+    project_dir="$workdir"
+    resume_mode=1
+  else
+    project_dir="$(next_work_dir "$project")"
+    mkdir -p "$project_dir"
+  fi
+  echo "== $(date '+%F %T') pipeline: $project -> $project_dir =="
 
   data_file="$DOXIS_DIR/data/$project.yml"
   [ -f "$data_file" ] || data_file="$DOXIS_DIR/data/$project.yaml"
   [ -f "$data_file" ] || data_file="$DOXIS_DIR/data/sample.yml"
   [ -f "$data_file" ] || { echo "  no data file or sample.yml, skipping $project"; continue; }
-  cp "$data_file" "$work_dir/input.yml"
+  if [ "$resume_mode" -eq 1 ] && [ -f "$project_dir/input.yml" ]; then
+    echo "  keeping existing input.yml (--workdir resume mode)"
+  else
+    cp "$data_file" "$project_dir/input.yml"
+  fi
 
   docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
   docker_args=(
@@ -103,25 +134,30 @@ for project in "${projects[@]}"; do
     docker_args+=(-e "OPENCODE_CONFIG=/etc/opencode/opencode.json")
     docker_args+=(-v "$config_file:/etc/opencode/opencode.json:ro")
   fi
-  docker_args+=(-v "$work_dir:/work")
+  docker_args+=(-v "$project_dir:/work")
   docker_args+=("${EXTRA_DOCKER_ARGS[@]}")
   docker_args+=("$IMAGE")
 
   trap 'docker stop "$CONTAINER_NAME" >/dev/null 2>&1 || true; exit 130' INT TERM
   
   set +e
-  docker run "${docker_args[@]}" 2>&1 | awk '{ print strftime("%Y-%m-%d %H:%M:%S"), $0; fflush() }' > "$work_dir/pipeline.log"
+  if [ "$resume_mode" -eq 1 ]; then
+    echo "== $(date '+%F %T') resume run: $project -> $project_dir ==" >> "$project_dir/pipeline.log"
+    docker run "${docker_args[@]}" 2>&1 | awk '{ print strftime("%Y-%m-%d %H:%M:%S"), $0; fflush() }' >> "$project_dir/pipeline.log"
+  else
+    docker run "${docker_args[@]}" 2>&1 | awk '{ print strftime("%Y-%m-%d %H:%M:%S"), $0; fflush() }' > "$project_dir/pipeline.log"
+  fi
   rc=${PIPESTATUS[0]}
   set -e
 
   echo "  container exit: $rc"
   if [ "$rc" -ne 0 ]; then
-    echo "  docker run failed for $project (rc=$rc); log: $work_dir/pipeline.log"
+    echo "  docker run failed for $project (rc=$rc); log: $project_dir/pipeline.log"
   fi
 
-  if find "$work_dir" -type f -name '*report.md' -print -quit | grep -q .; then
+  if find "$project_dir" -type f -name '*report.md' -print -quit | grep -q .; then
     echo "$project" >> "$DOXIS_DIR/state"
-    echo "== $project: DONE, artifacts in $work_dir"
+    echo "== $project: DONE, artifacts in $project_dir"
   else
     echo "== $project: FAILED (no report)"
   fi

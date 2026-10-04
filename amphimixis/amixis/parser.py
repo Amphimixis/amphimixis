@@ -156,7 +156,10 @@ EXAMPLES = {
       → Skip first 2 projects, use custom opencode config
   amixis doxis run <list-file> --repo https://github.com/x/y
       → Clone exactly this repository URL in the container
-      (passes repo url in all future launched containers)""",
+      (passes repo url in all future launched containers)
+  amixis doxis run <list-file> --workdir doxis/work/<project>_1
+      → Resume interrupted work in an existing directory
+      (no new <project>_<i> dir is created)""",
     "opencode": """Examples:
   amixis opencode install
       → Install Amphimixis agents, tools, and plugin into local .opencode/

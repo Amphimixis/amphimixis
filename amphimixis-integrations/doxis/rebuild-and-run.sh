@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Usage:
 #   rebuild-and-run.sh <list-file> [--limit N] [--skip M] [--repo URL]
-#                      [--config PATH] [--model PROVIDER/MODEL] [--no-build]
-#                      [--no-run] [--extra-docker ARG]
+#                      [--config PATH] [--model PROVIDER/MODEL] [--workdir DIR]
+#                      [--no-build] [--no-run] [--extra-docker ARG]
 set -euo pipefail
 
 DOXIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -27,6 +27,7 @@ while [ "$#" -gt 0 ]; do
     --skip) run_args+=(--skip "${2:?}"); shift 2 ;;
     --config) run_args+=(--config "${2:?}"); shift 2 ;;
     --model) run_args+=(--model "${2:?}"); shift 2 ;;
+    --workdir) run_args+=(--workdir "${2:?}"); shift 2 ;;
     --extra-docker) run_args+=(--extra-docker "${2:?}"); shift 2 ;;
     --repo) PROJECT_REPO="${2:?}"; shift 2 ;;
     --prompt) PIPELINE_PROMPT="${2:?}"; shift 2 ;;

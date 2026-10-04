@@ -33,6 +33,8 @@ def _translate_run_args(args: Namespace, list_file: str | None) -> list[str]:
         script_args += ["--prompt", str(args.prompt)]
     if args.repo:
         script_args += ["--repo", str(args.repo)]
+    if getattr(args, "workdir", None):
+        script_args += ["--workdir", str(args.workdir)]
     for extra in args.extra_docker or []:
         script_args += ["--extra-docker", extra]
     script_args.append(str(list_file))

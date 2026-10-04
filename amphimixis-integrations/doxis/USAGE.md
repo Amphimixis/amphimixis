@@ -78,7 +78,7 @@ AMPHIMIXIS_IMAGE=my-tag amixis doxis run projects
   builds (fails if the image is missing — build it first).
 - `amixis doxis run build-image <list-file> [flags]` builds the image
   and then runs the pipeline.
-- `run` accepts `--limit/--skip/--repo/--config/--model/--prompt/` `--extra-docker/--image`;
+- `run` accepts `--limit/--skip/--repo/--config/--model/--prompt/--workdir/` `--extra-docker/--image`;
   `build-image` accepts only `--image`.
 
 Notes:
@@ -101,11 +101,19 @@ Arguments:
 | `--config PATH` | Custom opencode config (JSON), mounted read-only and loaded via `OPENCODE_CONFIG` |
 | `--model PROVIDER/MODEL` | LLM model for opencode (default: `opencode/big-pickle`) |
 | `--no-build` | Skip the image build step and run against the existing image |
+| `--workdir PATH` | Host work directory: with a single project (or `--limit 1`) it is reused directly as `/work` (resume mode: existing `input.yml` is kept, `pipeline.log` is appended); with two or more projects numbered `<project>_<i>` dirs are created inside it instead of `doxis/work` |
 | `--extra-docker ARG` | Extra argument(s) passed through to `docker run` (repeatable) |
 | `-h` / `--help` | Print usage |
 
 The image tag defaults to `amphimixis-opencode:latest` and can be overridden
 with the `AMPHIMIXIS_IMAGE` environment variable.
+
+### Resuming interrupted work
+
+```bash
+./rebuild-and-run.sh projects --workdir doxis/work/util-linux_2 --no-build --limit 1
+amixis doxis run projects --limit 1 --workdir doxis/work/util-linux_2
+```
 
 ### Directory layout
 

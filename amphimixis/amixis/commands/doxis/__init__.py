@@ -99,6 +99,15 @@ def _add_run_args(parser: ArgumentParser) -> None:
         help="pipeline prompt overriding the generated one ",
     )
     parser.add_argument(
+        "--workdir",
+        type=str,
+        default=None,
+        metavar="PATH",
+        help="host work directory: with a single project it is reused "
+        "as /work (resume mode, existing input.yml kept, log appended); "
+        "with two or more projects <project>_<i> dirs are created inside it",
+    )
+    parser.add_argument(
         "--extra-docker",
         action="append",
         default=[],
