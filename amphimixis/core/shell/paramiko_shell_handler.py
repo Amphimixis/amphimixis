@@ -10,12 +10,14 @@ from amphimixis.core.shell.shell_interface import IShellHandler
 
 _CLEAR_OUTPUT_FLAG = "CLEAR_OUTPUT_FLAG"
 
+DEFAULT_TIMEOUT = 15
+
 
 class _ParamikoHandler(IShellHandler):
     def __init__(
         self,
         machine: MachineInfo,
-        connect_timeout: int = 15,
+        connect_timeout: int = DEFAULT_TIMEOUT,
     ) -> None:
         if machine.auth is None or machine.address is None:
             raise ArgumentError("Authentication data is not provided")
@@ -44,14 +46,14 @@ class _ParamikoHandler(IShellHandler):
 
         self.chan.invoke_shell()
         self.chan.settimeout(15)
-        self._wait_until_ready("READY")
+        self._wait_until_ready("READY", connect_timeout * 3)
         self.chan.send(b"stty -echo\n")
         self.chan.send(b"export PS1=''\n")
         self.chan.send(b"exec bash --norc --noprofile\n")
-        self._wait_until_ready("BASH_READY")
+        self._wait_until_ready("BASH_READY", connect_timeout * 3)
         self.chan.settimeout(None)
 
-    def _wait_until_ready(self, ready_flag: str = "READY", timeout: int = 30) -> None:
+    def _wait_until_ready(self, ready_flag: str, timeout: int) -> None:
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
             try:
