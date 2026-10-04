@@ -49,13 +49,13 @@ class TestBuildQemuCommand:
     """Tests for _build_qemu_command unconditional and conditional options."""
 
     def test_x86_base_command(self):
-        """x86 uses pc/qemu64 and pci network/rng devices."""
+        """x86 uses pc/Haswell and pci network/rng devices."""
         provisioner = QemuMachineProvisioner(_machine(Arch.X86, QemuConfig()))
         cmd = provisioner._build_qemu_command()
 
         assert cmd[0] == "qemu-system-x86_64"
         assert "-machine" in cmd and "pc" in cmd
-        assert "-cpu" in cmd and "qemu64" in cmd
+        assert "-cpu" in cmd and "Haswell" in cmd
         assert "-m" in cmd and "4G" in cmd
         assert "-smp" in cmd and "4" in cmd
         assert "virtio-net-pci,netdev=net" in cmd
@@ -65,13 +65,13 @@ class TestBuildQemuCommand:
         assert "-nographic" in cmd
 
     def test_riscv_base_command(self):
-        """riscv uses virt/rv64 and non-pci network/rng devices."""
+        """riscv uses virt/rv64+v+zba/zbb/zbc/zbs and non-pci devices."""
         provisioner = QemuMachineProvisioner(_machine(Arch.RISCV, QemuConfig()))
         cmd = provisioner._build_qemu_command()
 
         assert cmd[0] == "qemu-system-riscv64"
         assert "virt" in cmd
-        assert "rv64" in cmd
+        assert "rv64,v=true,zba=true,zbb=true,zbc=true,zbs=true" in cmd
         assert "virtio-net-device,netdev=net" in cmd
         assert "virtio-rng-device,rng=rng" in cmd
 
@@ -289,10 +289,12 @@ class TestSshAndLifecycle:
         """Defaults are arch-specific."""
         x86 = QemuMachineProvisioner(_machine(Arch.X86, QemuConfig()))
         assert x86._get_default_machine() == "pc"
-        assert x86._get_default_cpu() == "qemu64"
+        assert x86._get_default_cpu() == "Haswell"
         riscv = QemuMachineProvisioner(_machine(Arch.RISCV, QemuConfig()))
         assert riscv._get_default_machine() == "virt"
-        assert riscv._get_default_cpu() == "rv64"
+        assert riscv._get_default_cpu() == (
+            "rv64,v=true,zba=true,zbb=true,zbc=true,zbs=true"
+        )
 
     def test_get_provisioned_machine(self):
         """Provisioned machine keeps arch, address and auth."""

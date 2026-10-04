@@ -38,26 +38,26 @@ platforms:
 
 The `qemu` field supports two forms:
 
-| Value               | Meaning                                                        |
-| :------------------ | :------------------------------------------------------------- |
-| `qemu: true`        | Auto-download the default image for the given architecture     |
+| Value                  | Meaning                                                        |
+| :--------------------- | :------------------------------------------------------------- |
+| `qemu: true`           | Auto-download the default image for the given architecture     |
 | `qemu:` (dictionary)   | Fine tuning: VM files, resources, `keep_alive`, `extra_args`   |
 
 `false` or a missing field means the option is disabled.
 
 ## `qemu` fields
 
-| Field        | Type           | Default                              | Description                                |
-| :----------- | :------------- | :----------------------------------- | :----------------------------------------- |
-| `machine`    | string         | `pc` (`x86`), `virt` (`riscv`)       | QEMU machine type (`-machine`)             |
-| `cpu`        | string         | `qemu64` (`x86`), `rv64` (`riscv`)   | CPU model (`-cpu`)                         |
-| `memory`     | integer        | `4`                                  | VM memory size in gigabytes (`-m`)         |
-| `smp`        | integer        | `4`                                  | Number of virtual CPUs (`-smp`)            |
-| `kernel`     | string (path)  | —                                    | Path to the kernel image (`-kernel`)       |
-| `initrd`     | string (path)  | —                                    | Path to initrd (`-initrd`)                 |
-| `disk_image` | string (path)  | —                                    | Path to the disk image (qcow2)             |
-| `keep_alive` | boolean        | `false`                              | Do not stop the VM when the run completes  |
-| `extra_args` | list of string | `[]`                                 | Extra QEMU arguments, appended at the end of the command |
+| Field        | Type           | Default                            | Description                                |
+| :----------- | :------------- | :--------------------------------- | :----------------------------------------- |
+| `machine`    | string         | `pc` (`x86`), `virt` (`riscv`)     | QEMU machine type                          |
+| `cpu`        | string         | `Haswell` (`x86`), `rv64,v=true,zba=true,zbb=true,zbc=true,zbs=true` (`riscv`) | CPU model |
+| `memory`     | integer        | `4`                                | VM memory size in gigabytes                |
+| `smp`        | integer        | `4`                                | Number of virtual CPUs                     |
+| `kernel`     | string (path)  | —                                  | Path to the kernel image                   |
+| `initrd`     | string (path)  | —                                  | Path to initrd                             |
+| `disk_image` | string (path)  | —                                  | Path to the disk image                     |
+| `keep_alive` | boolean        | `false`                            | Do not stop the VM when the run completes  |
+| `extra_args` | list of string | `[]`                               | Extra QEMU arguments                       |
 
 Example with extra arguments:
 
@@ -79,22 +79,23 @@ Regardless of the `qemu` mapping contents, the `qemu-system-*`
 command always includes the following options
 (see `_build_qemu_command` in `amphimixis/core/qemu_machine.py`):
 
-| Option | Value / source | Purpose |
-| :----- | :------------- | :------ |
-| `-machine` | `qemu.machine` or the default (`pc` for `x86`, `virt` for `riscv`) | VM board/machine type |
-| `-cpu` | `qemu.cpu` or the default (`qemu64` for `x86`, `rv64` for `riscv`) | CPU model |
-| `-m` | `<memory>G`, default `4G` | VM memory size |
-| `-smp` | `<smp>`, default `4` | Number of virtual CPUs |
-| `-device` + `-netdev` | `virtio-net-pci,netdev=net` (`x86`) or `virtio-net-device,netdev=net` (others) + `user,id=net,hostfwd=tcp:127.0.0.1:<port>-:22` | User-mode networking; the guest SSH port 22 is forwarded to the host `port` (default `2222`), accessed via `127.0.0.1` |
-| `-object` | `rng-random,filename=/dev/urandom,id=rng` | Entropy source for the guest |
-| `-device` (rng) | `virtio-rng-pci,rng=rng` (`x86`) or `virtio-rng-device,rng=rng` (others) | Random number device in the guest |
-| `-nographic` | — | Run without a graphical window, console goes to stdout |
+| Option             | Value / source                                                                 | Purpose                           |
+| :----------------- | :----------------------------------------------------------------------------- | :-------------------------------- |
+| `-machine`         | `qemu.machine` or the default (`pc` for `x86`, `virt` for `riscv`)             | VM board/machine type             |
+| `-cpu`             | `qemu.cpu` or the default (`Haswell` for `x86`, `rv64,v=true,zba=true,zbb=true,zbc=true,zbs=true` for `riscv`) | CPU model |
+| `-m`               | `<memory>G`, default `4G`                                                      | VM memory size                    |
+| `-smp`             | `<smp>`, default `4`                                                           | Number of virtual CPUs            |
+| `-device` (netdev) | `virtio-net-pci,netdev=net` (`x86`) or `virtio-net-device,netdev=net` (others) |                                   |
+| `-netdev`          | `user,id=net,hostfwd=tcp:127.0.0.1:<port>-:22`                                 | User-mode networking              |
+| `-object`          | `rng-random,filename=/dev/urandom,id=rng`                                      | Entropy source for the guest      |
+| `-device` (rng)    | `virtio-rng-pci,rng=rng` (`x86`) or `virtio-rng-device,rng=rng` (others)       | Random number device in the guest |
+| `-nographic`       | —                                                                              | Run without a graphical window    |
 
 Example of the base command part for `x86` (default values,
-host port `2222`):
+host port `2222` chosen explicitly):
 
 ```text
-qemu-system-x86_64 -machine pc -cpu qemu64 -m 4G -smp 4 \
+qemu-system-x86_64 -machine pc -cpu Haswell -m 4G -smp 4 \
   -device virtio-net-pci,netdev=net \
   -netdev user,id=net,hostfwd=tcp:127.0.0.1:2222-:22 \
   -object rng-random,filename=/dev/urandom,id=rng \

@@ -504,8 +504,8 @@ class QemuMachineProvisioner:
         :return: CPU model string.
         """
         cpu_map = {
-            "riscv": "rv64",
-            "x86": "qemu64",
+            "riscv": "rv64,v=true,zba=true,zbb=true,zbc=true,zbs=true",
+            "x86": "Haswell",
         }
         return cpu_map.get(self._machine.arch.lower(), self._machine.arch.lower())
 

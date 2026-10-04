@@ -93,7 +93,7 @@ class QemuConfig:
 
     :var str | None machine: QEMU machine type (e.g., "virt" for RISC-V).
         If None, defaults to arch-specific value ("pc" for x86, "virt" for RISC-V).
-    :var str | None cpu: CPU model (e.g., "rv64" for RISC-V).
+    :var str | None cpu: CPU model (e.g., "rv64,v=true,zba=true" for RISC-V).
         If None, defaults to arch-specific value.
     :var int memory: Memory size in GB (default: 4).
     :var int smp: Number of SMP processors (default: 4).
