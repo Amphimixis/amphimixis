@@ -103,7 +103,6 @@ class Profiler:
         execution_time: bool = True,
         stat_collect: bool = True,
         record_collect: bool = True,
-        max_number_of_executables=1,
         events: list[str] | None = None,
     ) -> list[str]:
         """Run profiling on every executable.
@@ -140,7 +139,7 @@ class Profiler:
         success_executables = []
 
         if not self.executables:
-            self.executables = self._find_executables(max_number_of_executables)
+            self.executables = self._find_executables()
             self.ui.update_message(
                 self.build.build_name, "Searching for executables..."
             )
@@ -778,7 +777,7 @@ class Profiler:
         full_prefix = f"/bin/time {fixed_format}"
         return self._build_cmd(full_prefix.strip(), executable, **kwargs)
 
-    def _find_executables(self, max_number_of_executables=1) -> list[str]:
+    def _find_executables(self) -> list[str]:
         error, stdout, stderr = self.shell.run(
             f"cd {self.build_path}", 'find -type f -executable -name "*test*"'
         )
@@ -789,10 +788,7 @@ class Profiler:
             )
             return []
 
-        return [
-            os.path.normpath(line.strip())
-            for line in stdout[1][:max_number_of_executables]
-        ]
+        return [os.path.normpath(line.strip()) for line in stdout[1]]
 
 
 if __name__ == "__main__":
