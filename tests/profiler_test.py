@@ -255,7 +255,6 @@ class TestProfiler:
             execution_time=False,
             stat_collect=False,
             record_collect=False,
-            max_number_of_executables=1,
         )
 
     @pytest.mark.parametrize("program", [C_PROGRAM_SUCCESSFUL_RUN])
@@ -271,7 +270,6 @@ class TestProfiler:
             execution_time=False,
             stat_collect=False,
             record_collect=False,
-            max_number_of_executables=1,
         )
 
     @pytest.mark.parametrize("program", [C_PROGRAM_SUCCESSFUL_RUN])
@@ -303,7 +301,6 @@ class TestProfiler:
             execution_time=True,
             stat_collect=True,
             record_collect=True,
-            max_number_of_executables=1,
             events=["cycles"],
         )
 
@@ -352,7 +349,6 @@ class TestProfiler:
             execution_time=True,
             stat_collect=True,
             record_collect=True,
-            max_number_of_executables=2,
             events=["cycles"],
         )
 
@@ -439,7 +435,7 @@ class TestProfiler:
             return_value=(1, [[], []], [["find failed\n"]]),
         )
 
-        assert profiler._find_executables(2) == []
+        assert profiler._find_executables() == []
 
     def test_profile_all_uses_source_dir_when_working_directory_not_provided(
         self, get_shellmocked_profiler, mocker: pytest_mock.MockerFixture
