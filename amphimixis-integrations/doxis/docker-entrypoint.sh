@@ -19,7 +19,7 @@ fi
 if [ -n "${PROJECT_REPO:-}" ]; then
   REPO_INSTRUCTION="The project repository URL is ${PROJECT_REPO}. Clone exactly this URL into the workspace. Do not search for a different repository."
 else
-  REPO_INSTRUCTION="Search GitHub/GitLab for the active repository of the source package \"${PROJECT_NAME}\" (prefer the repo with the latest commits and tags, the most stars and an active upstream). Take the resolved clone URL and record it in the report. If no clearly matching repository exists, document that and finish the report marking the data as NOT AVAILABLE."
+  REPO_INSTRUCTION="Search GitHub/GitLab for the active repository of the source package \"${PROJECT_NAME}\""
 fi
 
 PROMPT="$(cat <<EOF
@@ -27,13 +27,10 @@ You are applying the Amphimixis migration readiness pipeline to the single proje
 
 CONTEXT:
 - Reference platform: x86_64 (the local container machine). Target platform can be either x86_64 or riscv (if target platform is different from build platform and does not contain address -- use cross-compilation tools and qemu-user emulation).
-- The Amphimixis config file input.yml is ALREADY provided in the current working directory (/work).
+- The Amphimixis config file input.yml is provided in the current working directory (/work), you can add project executables into it if they are not provided.
 - ${REPO_INSTRUCTION}
-- Working workspace: /work/${PROJECT_NAME}-workspace.
 
 RULES:
-- NEVER fabricate profiling data. Mark anything unmeasured as NOT AVAILABLE; label reconstructed data as RECONSTRUCTED (not measured).
-- improvements.json, cross-tables/CT-*.md and the saved profile JSON/YAML/pkl are tool-owned and read-only for you.
 - Do not read pipeline.log file.
 - When every phase is finished and the report is saved, print exactly the line: WORK ON THE ${PROJECT_NAME} IS COMPLETED
 
