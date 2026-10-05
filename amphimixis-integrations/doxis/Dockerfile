@@ -13,6 +13,7 @@ RUN apt-get update \
         build-essential g++ gcc cmake make ninja-build pkg-config \
         gcc-riscv64-linux-gnu g++-riscv64-linux-gnu \
         qemu-user-hwe \
+        qemu-user-binfmt-hwe \
         python3 python3-pip python3-venv \
         rsync sshpass time \
         unzip \
