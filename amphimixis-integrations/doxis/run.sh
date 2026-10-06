@@ -122,7 +122,6 @@ for project in "${projects[@]}"; do
   docker_args=(
     --name "$CONTAINER_NAME"
     --rm
-    --cap-add SYS_ADMIN
     -e "PROJECT_NAME=$project"
     -e "PUID=$(id -u)"
     -e "PGID=$(id -g)"
