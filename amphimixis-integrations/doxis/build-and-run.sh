@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # Usage:
-#   rebuild-and-run.sh <list-file> [--limit N] [--skip M] [--repo URL]
+#   build-and-run.sh <list-file> [--limit N] [--skip M] [--repo URL]
 #                      [--config PATH] [--model PROVIDER/MODEL] [--workdir DIR]
 #                      [--no-build] [--no-run] [--extra-docker ARG]
 set -euo pipefail
 
 DOXIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$DOXIS_DIR/../.." && pwd)"
-RUN="$DOXIS_DIR/run.sh"
+RUN="$DOXIS_DIR/process-projects.sh"
 
 AMPHIMIXIS_IMAGE="${AMPHIMIXIS_IMAGE:-amphimixis-opencode:latest}"
 PROJECT_REPO=""

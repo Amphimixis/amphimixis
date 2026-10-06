@@ -2,7 +2,7 @@
 
 The doxis harness runs the Amphimixis-AI migration-readiness pipeline inside a
 disposable Docker container per project. The pipeline is driven by a single
-entrypoint script: `rebuild-and-run.sh`.
+entrypoint script: `build-and-run.sh`.
 
 Before you start, please:
 
@@ -40,24 +40,24 @@ generated or installed on the host.
 
 ## Usage
 
-`rebuild-and-run.sh` rebuilds the Docker image (unless `--no-build`) and then
+`build-and-run.sh` rebuilds the Docker image (unless `--no-build`) and then
 runs the pipeline over the project list:
 
 ```bash
-amphimixis-integrations/doxis/rebuild-and-run.sh <list-file> [options]
+amphimixis-integrations/doxis/build-and-run.sh <list-file> [options]
 ```
 
 It performs two steps:
 
 1. Builds the Docker image `amphimixis-opencode:latest` from the repository
    root. `--no-build` skips this step and uses an existing image.
-2. Forwards the remaining arguments to the internal `./run.sh` and
+2. Forwards the remaining arguments to the internal `./process-projects.sh` and
    starts it (one disposable container per project).
 
 Example:
 
 ```bash
-./rebuild-and-run.sh projects --limit 1 --config my-opencode.json --model opencode/big-pickle
+./build-and-run.sh projects --limit 1 --config my-opencode.json --model opencode/big-pickle
 ```
 
 ### Via the `amixis` CLI
@@ -83,7 +83,7 @@ AMPHIMIXIS_IMAGE=my-tag amixis doxis run projects
 
 Notes:
 
-- `amixis doxis` forwards to `run.sh` / `rebuild-and-run.sh`, so
+- `amixis doxis` forwards to `process-projects.sh` / `build-and-run.sh`, so
   `docker` and a repo checkout are still required (it is not available
   from a pip-installed wheel without the checkout).
 - `--image TAG` overrides `$AMPHIMIXIS_IMAGE` for this run.
@@ -111,7 +111,7 @@ with the `AMPHIMIXIS_IMAGE` environment variable.
 ### Resuming interrupted work
 
 ```bash
-./rebuild-and-run.sh projects --workdir doxis/work/util-linux_2 --no-build --limit 1
+./build-and-run.sh projects --workdir doxis/work/util-linux_2 --no-build --limit 1
 amixis doxis run projects --limit 1 --workdir doxis/work/util-linux_2
 ```
 

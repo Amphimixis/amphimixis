@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Usage:
-#   run.sh <list-file> [--limit N] [--skip M] [--config PATH] [--model PROVIDER/MODEL]
+#   process-projects.sh <list-file> [--limit N] [--skip M] [--config PATH] [--model PROVIDER/MODEL]
 #                      [--workdir DIR]
 set -euo pipefail
 

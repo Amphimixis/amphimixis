@@ -8,12 +8,12 @@ from amphimixis.amixis.commands.doxis._utils import (
     _resolve_doxis_script,
 )
 
-_REBUILD_SCRIPT_NAME = "rebuild-and-run.sh"
+_REBUILD_SCRIPT_NAME = "build-and-run.sh"
 _BUILD_IMAGE_SUBCMD = "build-image"
 
 
 def _translate_run_args(args: Namespace, list_file: str | None) -> list[str]:
-    """Translate parsed args to ``rebuild-and-run.sh`` arguments.
+    """Translate parsed args to ``build-and-run.sh`` arguments.
 
     :param Namespace args: parsed command line arguments
     :param str | None list_file: list file, or None for a build-only run

@@ -197,7 +197,7 @@ class TestRunDoxis:
     def test_run_without_build_adds_no_build(self, mocker, tmp_path):
         list_file = tmp_path / "projects"
         list_file.write_text("util-linux\n")
-        rebuild = tmp_path / "rebuild-and-run.sh"
+        rebuild = tmp_path / "build-and-run.sh"
         rebuild.write_text("#!/usr/bin/env bash\n")
         mocker.patch(
             "amphimixis.amixis.commands.doxis.run._resolve_doxis_script",
@@ -220,7 +220,7 @@ class TestRunDoxis:
     def test_run_build_image_calls_rebuild_script(self, mocker, tmp_path):
         list_file = tmp_path / "projects"
         list_file.write_text("util-linux\n")
-        rebuild = tmp_path / "rebuild-and-run.sh"
+        rebuild = tmp_path / "build-and-run.sh"
         rebuild.write_text("#!/usr/bin/env bash\n")
         mocker.patch(
             "amphimixis.amixis.commands.doxis.run._resolve_doxis_script",
@@ -242,7 +242,7 @@ class TestRunDoxis:
     ):
         list_file = tmp_path / "projects"
         list_file.write_text("util-linux\n")
-        rebuild = tmp_path / "rebuild-and-run.sh"
+        rebuild = tmp_path / "build-and-run.sh"
         rebuild.write_text("#!/usr/bin/env bash\n")
         mocker.patch(
             "amphimixis.amixis.commands.doxis.run._resolve_doxis_script",
@@ -272,7 +272,7 @@ class TestRunDoxis:
         assert env["AMPHIMIXIS_IMAGE"] == "my-tag"
 
     def test_build_image_calls_rebuild_no_run(self, mocker, tmp_path):
-        rebuild = tmp_path / "rebuild-and-run.sh"
+        rebuild = tmp_path / "build-and-run.sh"
         rebuild.write_text("#!/usr/bin/env bash\n")
         mocker.patch(
             "amphimixis.amixis.commands.doxis.build_image._resolve_doxis_script",
@@ -306,7 +306,7 @@ class TestRunDoxis:
     def test_nonzero_rc_is_failure(self, mocker, tmp_path):
         list_file = tmp_path / "projects"
         list_file.write_text("util-linux\n")
-        rebuild = tmp_path / "rebuild-and-run.sh"
+        rebuild = tmp_path / "build-and-run.sh"
         rebuild.write_text("#!/usr/bin/env bash\n")
         mocker.patch(
             "amphimixis.amixis.commands.doxis.run._resolve_doxis_script",
@@ -316,7 +316,7 @@ class TestRunDoxis:
         assert doxis_cmd.run_doxis(_run_args(target=str(list_file))) is False
 
     def test_launch_failure_is_failure(self, mocker, tmp_path):
-        rebuild = tmp_path / "rebuild-and-run.sh"
+        rebuild = tmp_path / "build-and-run.sh"
         rebuild.write_text("#!/usr/bin/env bash\n")
         mocker.patch(
             "amphimixis.amixis.commands.doxis.build_image._resolve_doxis_script",
@@ -328,10 +328,10 @@ class TestRunDoxis:
         assert doxis_cmd.run_doxis(_build_image_args()) is False
 
     def test_resolve_scripts_from_repo(self):
-        rebuild = doxis_utils._resolve_doxis_script("rebuild-and-run.sh")
-        run_sh = doxis_utils._resolve_doxis_script("run.sh")
-        assert rebuild is not None and rebuild.name == "rebuild-and-run.sh"
-        assert run_sh is not None and run_sh.name == "run.sh"
+        rebuild = doxis_utils._resolve_doxis_script("build-and-run.sh")
+        run_sh = doxis_utils._resolve_doxis_script("process-projects.sh")
+        assert rebuild is not None and rebuild.name == "build-and-run.sh"
+        assert run_sh is not None and run_sh.name == "process-projects.sh"
         assert rebuild.parent == run_sh.parent
         assert doxis_utils._resolve_doxis_script("no-such-script.sh") is None
 
@@ -346,7 +346,7 @@ class TestRunDoxis:
         assert "AMPHIMIXIS_IMAGE" not in env
 
     def test_launch_reports_returncode(self, mocker, tmp_path):
-        script = tmp_path / "rebuild-and-run.sh"
+        script = tmp_path / "build-and-run.sh"
         script.write_text("#!/usr/bin/env bash\n")
         for returncode, expected in ((0, True), (2, False)):
             completed = subprocess.CompletedProcess(
@@ -371,11 +371,11 @@ class TestRunDoxis:
             "amphimixis.amixis.commands.doxis._utils.subprocess.run",
             side_effect=FileNotFoundError("bash"),
         )
-        assert doxis_utils._launch(tmp_path / "rebuild-and-run.sh", [], {}) is False
+        assert doxis_utils._launch(tmp_path / "build-and-run.sh", [], {}) is False
 
     def test_launch_handles_keyboard_interrupt(self, mocker, tmp_path):
         mocker.patch(
             "amphimixis.amixis.commands.doxis._utils.subprocess.run",
             side_effect=KeyboardInterrupt(),
         )
-        assert doxis_utils._launch(tmp_path / "rebuild-and-run.sh", [], {}) is False
+        assert doxis_utils._launch(tmp_path / "build-and-run.sh", [], {}) is False

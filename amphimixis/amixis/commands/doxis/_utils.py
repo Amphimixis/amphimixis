@@ -12,7 +12,7 @@ _DOXIS_DIR_REL = Path("amphimixis-integrations/doxis")
 def _resolve_doxis_script(name: str) -> Path | None:
     """Locate a doxis helper script from the repo checkout.
 
-    :param str name: script file name (e.g. ``run.sh``)
+    :param str name: script file name (e.g. ``process-projects.sh``)
     :return: script path if found, None otherwise
     :rtype: Path | None
     """

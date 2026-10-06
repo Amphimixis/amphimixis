@@ -8,7 +8,7 @@ from amphimixis.amixis.commands.doxis._utils import (
     _resolve_doxis_script,
 )
 
-_REBUILD_SCRIPT_NAME = "rebuild-and-run.sh"
+_REBUILD_SCRIPT_NAME = "build-and-run.sh"
 
 
 def _run_build_image(args: Namespace) -> bool:
