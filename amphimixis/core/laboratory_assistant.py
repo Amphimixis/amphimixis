@@ -94,6 +94,7 @@ class LaboratoryAssistant:
         _toolbox = LaboratoryAssistant.parse_config_file()
         if platform_name in _toolbox[_PLATFORMS]:
             machine = _toolbox[_PLATFORMS][platform_name]
+            events = machine.get(_EVENTS, None)
             auth = None
             if _AUTH in machine:
                 auth = MachineAuthenticationInfo(
@@ -105,7 +106,7 @@ class LaboratoryAssistant:
                 Arch(machine[_ARCH]),
                 machine.get(_ADDRESS, None),
                 auth,
-                machine.get(_EVENTS, None),
+                list(events.split()) if isinstance(events, str) else events,
             )
         return None
 

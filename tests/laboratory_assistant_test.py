@@ -242,3 +242,35 @@ class TestLaboratoryAssistant:
 
         assert path.exists(LaboratoryAssistant.CONFIG_DIR_PATH)
         assert is_file_exists_and_correct(LaboratoryAssistant.TOOLBOX_PATH)
+
+    def test_platform_events_round_trip(self, _set_testing_environment) -> None:
+        """Platform events survive add/find round-trip."""
+        machine = MachineInfo(
+            Arch.X86,
+            None,
+            None,
+            ["cycles", "cache-misses"],
+        )
+
+        LaboratoryAssistant.add_platform("events-plat", machine)
+
+        found = LaboratoryAssistant.find_platform("events-plat")
+        assert found is not None
+        assert found.events == ["cycles", "cache-misses"]
+
+    def test_find_platform_normalizes_string_events(
+        self, _set_testing_environment
+    ) -> None:
+        """String events in toolbox are normalized to a list."""
+        LaboratoryAssistant.parse_config_file()
+        toolbox = LaboratoryAssistant.parse_config_file()
+        toolbox[_PLATFORMS]["string-events-plat"] = {
+            "arch": Arch.X86.value,
+            "events": "cycles cache-misses",
+        }
+        with open(LaboratoryAssistant.TOOLBOX_PATH, "w", encoding="utf-8") as f_toolbox:
+            yaml.safe_dump(toolbox, f_toolbox)
+
+        found = LaboratoryAssistant.find_platform("string-events-plat")
+        assert found is not None
+        assert found.events == ["cycles", "cache-misses"]

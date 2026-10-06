@@ -407,17 +407,14 @@ class Profiler:
         :type working_directory: str
 
         :param events: perf events to record.
-         Default: [cycles, cache-misses, branch-misses]
-        :type events: list[str]
+         If None, uses build.run_machine.events from config,
+         then [cycles, cache-misses, branch-misses]
+        :type events: list[str] | None
 
         :return: `False` if can't collect samples. Otherwise `True`
         :rtype: bool
         """
-        if not events:
-            if self.build.run_machine.arch == general.Arch.RISCV:
-                events = ["cpu-clock", "cache-misses", "branch-misses"]
-            else:
-                events = ["cycles", "cache-misses", "branch-misses"]
+        events = self._resolve_events(events)
 
         self.ui.update_message(self.build.build_name, "Perf data recording...")
         self.logger.info(
@@ -530,6 +527,21 @@ class Profiler:
         )
 
         return True
+
+    def _resolve_events(self, events: list[str] | None) -> list[str]:
+        """Resolve perf events: CLI arg > machine config > arch default."""
+        if events:
+            return events
+        config_events = self.build.run_machine.events
+        if config_events:
+            return (
+                list(config_events.split())
+                if isinstance(config_events, str)
+                else config_events
+            )
+        if self.build.run_machine.arch == general.Arch.RISCV:
+            return ["cpu-clock", "cache-misses", "branch-misses"]
+        return ["cycles", "cache-misses", "branch-misses"]
 
     def perf_script(self, filename: str, working_directory: str) -> tuple[bool, str]:
         """Run `perf script` on the provided perf data file and saves to `filename`.txt.
