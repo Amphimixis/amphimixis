@@ -1,4 +1,4 @@
-"""Tests for build systems: CMake, Make, Ninja"""
+"""Tests for build systems: Autoconf, CMake, Make, Ninja"""
 
 import os
 import pytest
@@ -6,6 +6,7 @@ import pytest
 from unittest.mock import MagicMock, patch
 
 
+from amphimixis.core.build_systems.autoconf import Autoconf
 from amphimixis.core.build_systems.cmake import CMake
 from amphimixis.core.build_systems.make import Make
 from amphimixis.core.build_systems.ninja import Ninja
@@ -433,6 +434,503 @@ class TestCMake:
             cmake_system.build(build)
 
         assert mock_shell.run.call_count >= 2
+
+
+@pytest.mark.unit
+class TestAutoconf:
+    """Tests for Autoconf build system"""
+
+    @pytest.fixture
+    def autoconf_system(self, mock_project):
+        return Autoconf(mock_project)
+
+    @pytest.mark.parametrize(
+        "flag_attr,flag_value,expected_flag",
+        [
+            (CompilerFlagsAttrs.C_FLAGS, "-O2", "CFLAGS='-O2'"),
+            (CompilerFlagsAttrs.CXX_FLAGS, "-Wall", "CXXFLAGS='-Wall'"),
+            (
+                CompilerFlagsAttrs.FORTRAN_FLAGS,
+                "-ffast-math",
+                "FCFLAGS='-ffast-math'",
+            ),
+        ],
+    )
+    def test_generate_lang_flags(
+        self, autoconf_system, flag_attr, flag_value, expected_flag
+    ):
+        compiler_flags = CompilerFlags()
+        compiler_flags.set(flag_attr, flag_value)
+        result = autoconf_system._generate_lang_flags(compiler_flags)
+        assert expected_flag in result
+
+    @pytest.mark.parametrize(
+        "tool_attr,expected_tool",
+        [
+            (ToolchainAttrs.C_COMPILER, "CC"),
+            (ToolchainAttrs.CXX_COMPILER, "CXX"),
+            (ToolchainAttrs.FORTRAN_COMPILER, "FC"),
+            (ToolchainAttrs.AR_T, "AR"),
+            (ToolchainAttrs.LD_T, "LD"),
+        ],
+    )
+    def test_toolchain_attrs_map(self, autoconf_system, tool_attr, expected_tool):
+        result = autoconf_system._attrs_map(tool_attr.value)
+        assert result == expected_tool
+
+    @pytest.mark.parametrize(
+        "compiler,flags,expected",
+        [
+            (ToolchainAttrs.C_COMPILER, "/usr/bin/gcc", "CC='/usr/bin/gcc'"),
+            (ToolchainAttrs.CXX_COMPILER, "/usr/bin/g++", "CXX='/usr/bin/g++'"),
+        ],
+    )
+    def test_generate_toolchain_flags(self, autoconf_system, compiler, flags, expected):
+        toolchain = Toolchain()
+        toolchain.set(compiler, flags)
+        result = autoconf_system._generate_toolchain_flags(toolchain)
+        assert expected in result
+
+    def test_sysroot_in_command(self, mock_project, mock_shell):
+        sysroot = "/sysroot"
+        toolchain = Toolchain(sysroot=sysroot)
+        toolchain.set(ToolchainAttrs.C_COMPILER, "/usr/bin/gcc")
+
+        build = Build(
+            build_machine=MachineInfo(Arch.X86, None, None),
+            run_machine=MachineInfo(Arch.X86, None, None),
+            build_name="autoconf_build",
+            executables=[],
+            toolchain=toolchain,
+            sysroot=sysroot,
+            compiler_flags=None,
+            config_flags=None,
+        )
+
+        runner = MagicMock()
+        runner.run_building.return_value = (0, "", "")
+
+        with (
+            patch(
+                "amphimixis.core.build_systems.autoconf.Shell",
+                return_value=mock_shell,
+            ),
+            patch(
+                "amphimixis.core.build_systems.autoconf.BuildSystem.find_relative_path",
+                return_value=file,
+            ),
+        ):
+            autoconf = Autoconf(mock_project, runner=runner)
+            autoconf.build(build)
+
+        calls = [str(call) for call in mock_shell.run.call_args_list]
+        combined_output = " ".join(calls)
+        assert "SYSROOT='/sysroot'" in combined_output
+
+    def test_config_flags_passed(self, mock_project, mock_shell):
+        build = Build(
+            build_machine=MachineInfo(Arch.X86, None, None),
+            run_machine=MachineInfo(Arch.X86, None, None),
+            build_name="test",
+            executables=[],
+            toolchain=None,
+            sysroot=None,
+            compiler_flags=None,
+            config_flags="--enable-static",
+        )
+
+        runner = MagicMock()
+        runner.run_building.return_value = (0, "", "")
+
+        with (
+            patch(
+                "amphimixis.core.build_systems.autoconf.Shell",
+                return_value=mock_shell,
+            ),
+            patch(
+                "amphimixis.core.build_systems.autoconf.BuildSystem.find_relative_path",
+                return_value=file,
+            ),
+        ):
+            autoconf = Autoconf(mock_project, runner=runner)
+            autoconf.build(build)
+
+        calls = [str(call) for call in mock_shell.run.call_args_list]
+        combined_output = " ".join(calls)
+        assert "--enable-static" in combined_output
+
+    def test_configure_and_build_steps(self, mock_project, mock_shell):
+        runner = MagicMock()
+        runner.run_building.return_value = (0, "", "")
+
+        build = Build(
+            build_machine=MachineInfo(Arch.X86, None, None),
+            run_machine=MachineInfo(Arch.X86, None, None),
+            build_name="test",
+            executables=[],
+            toolchain=None,
+            sysroot=None,
+            compiler_flags=None,
+            config_flags=None,
+        )
+
+        with (
+            patch(
+                "amphimixis.core.build_systems.autoconf.Shell",
+                return_value=mock_shell,
+            ),
+            patch(
+                "amphimixis.core.build_systems.autoconf.BuildSystem.find_relative_path",
+                return_value=file,
+            ),
+        ):
+            autoconf = Autoconf(mock_project, runner=runner)
+            autoconf.build(build)
+
+        assert mock_shell.run.call_count >= 2
+
+    def test_runner_called(self, mock_project, mock_shell):
+        runner = MagicMock()
+        runner.run_building.return_value = (0, "built", "")
+
+        build = Build(
+            build_machine=MachineInfo(Arch.X86, None, None),
+            run_machine=MachineInfo(Arch.X86, None, None),
+            build_name="test",
+            executables=[],
+            toolchain=None,
+            sysroot=None,
+            compiler_flags=None,
+            config_flags=None,
+        )
+
+        with (
+            patch(
+                "amphimixis.core.build_systems.autoconf.Shell",
+                return_value=mock_shell,
+            ),
+            patch(
+                "amphimixis.core.build_systems.autoconf.BuildSystem.find_relative_path",
+                return_value=file,
+            ),
+        ):
+            autoconf = Autoconf(mock_project, runner=runner)
+            err, stdout, _ = autoconf.build(build)
+
+        assert runner.run_building.call_count == 1
+        assert err == 0
+        assert "built" in stdout
+
+    def test_autoreconf_run_when_configure_missing(self, mock_project, mock_shell):
+        source_dir = mock_shell.get_source_dir()
+        before = set()
+        after = {
+            os.path.join(source_dir, "configure"),
+            os.path.join(source_dir, "Makefile.in"),
+            os.path.join(source_dir, "aclocal.m4"),
+        }
+
+        runner = MagicMock()
+        runner.run_building.return_value = (0, "built", "")
+
+        build = Build(
+            build_machine=MachineInfo(Arch.X86, None, None),
+            run_machine=MachineInfo(Arch.X86, None, None),
+            build_name="test",
+            executables=[],
+            toolchain=None,
+            sysroot=None,
+            compiler_flags=None,
+            config_flags=None,
+        )
+
+        with patch(
+            "amphimixis.core.build_systems.autoconf.Shell",
+            return_value=mock_shell,
+        ):
+            autoconf = Autoconf(mock_project, runner=runner)
+            autoconf._list_source_paths = MagicMock(side_effect=[before, after])
+            autoconf._find_autoconf_dir = MagicMock(return_value=source_dir)
+            autoconf._generate_configure = MagicMock(
+                return_value=(0, [["generated"]], [[""]])
+            )
+            autoconf._clean_source_paths = MagicMock()
+
+            err, stdout, _ = autoconf.build(build)
+
+        assert err == 0
+        assert "built" in stdout
+        autoconf._generate_configure.assert_called_once()
+        autoconf._clean_source_paths.assert_called_once_with(mock_shell, after - before)
+
+    def test_autogen_sh_used_when_present(self, mock_project, mock_shell):
+        autoconf = Autoconf(mock_project)
+        mock_shell.run.side_effect = [
+            (0, [[""]], [[""]]),
+            (0, [["autogen output"]], [[""]]),
+        ]
+
+        autoconf._generate_configure(mock_shell, "/mock/source")
+
+        combined = " ".join(str(call) for call in mock_shell.run.call_args_list)
+        assert "./autogen.sh" in combined
+        assert "autoreconf" not in combined
+
+    def test_bootstrap_used_when_autogen_missing(self, mock_project, mock_shell):
+        autoconf = Autoconf(mock_project)
+        mock_shell.run.side_effect = [
+            (1, [[""]], [[""]]),
+            (0, [[""]], [[""]]),
+            (0, [["bootstrap output"]], [[""]]),
+        ]
+
+        autoconf._generate_configure(mock_shell, "/mock/source")
+
+        calls = mock_shell.run.call_args_list
+        assert len(calls) == 3
+        combined = " ".join(str(call) for call in calls)
+        assert "./bootstrap" in combined
+        assert "autoreconf" not in combined
+        assert "./autogen.sh" not in combined
+
+    def test_autoreconf_fallback_when_no_generation_script(
+        self, mock_project, mock_shell
+    ):
+        autoconf = Autoconf(mock_project)
+        mock_shell.run.side_effect = [
+            (1, [[""]], [[""]]),
+            (1, [[""]], [[""]]),
+            (0, [["autoreconf output"]], [[""]]),
+        ]
+
+        autoconf._generate_configure(mock_shell, "/mock/source")
+
+        calls = mock_shell.run.call_args_list
+        assert len(calls) == 3
+        combined = " ".join(str(call) for call in calls)
+        assert "autoreconf --install" in combined
+        assert "./bootstrap" not in combined
+
+    def test_find_autoconf_dir_prefers_top_level(self, mock_project, mock_shell):
+        autoconf = Autoconf(mock_project)
+        mock_shell.run.side_effect = [
+            (
+                0,
+                [
+                    [
+                        "/mock/source/gold/configure.ac",
+                        "/mock/source/configure.ac",
+                        "/mock/source/gdb/configure.ac",
+                    ]
+                ],
+                [[""]],
+            )
+        ]
+
+        assert autoconf._find_autoconf_dir(mock_shell, "/mock/source") == "/mock/source"
+
+    def test_find_autoconf_dir_nested_only(self, mock_project, mock_shell):
+        autoconf = Autoconf(mock_project)
+        mock_shell.run.side_effect = [
+            (
+                0,
+                [
+                    [
+                        "/mock/source/gold/configure.ac",
+                        "/mock/source/gdb/configure.ac",
+                    ]
+                ],
+                [[""]],
+            )
+        ]
+
+        result = autoconf._find_autoconf_dir(mock_shell, "/mock/source")
+        assert result == "/mock/source/gdb"
+
+    def test_no_generation_when_configure_exists(self, mock_project, mock_shell):
+        source_dir = mock_shell.get_source_dir()
+        before = {
+            os.path.join(source_dir, "configure"),
+            os.path.join(source_dir, "Makefile.in"),
+        }
+
+        runner = MagicMock()
+        runner.run_building.return_value = (0, "built", "")
+
+        build = Build(
+            build_machine=MachineInfo(Arch.X86, None, None),
+            run_machine=MachineInfo(Arch.X86, None, None),
+            build_name="test",
+            executables=[],
+            toolchain=None,
+            sysroot=None,
+            compiler_flags=None,
+            config_flags=None,
+        )
+
+        with (
+            patch(
+                "amphimixis.core.build_systems.autoconf.Shell",
+                return_value=mock_shell,
+            ),
+            patch(
+                "amphimixis.core.build_systems.autoconf.BuildSystem.find_relative_path",
+                return_value=file,
+            ),
+        ):
+            autoconf = Autoconf(mock_project, runner=runner)
+            autoconf._list_source_paths = MagicMock(return_value=before)
+            autoconf._find_autoconf_dir = MagicMock(return_value=source_dir)
+            autoconf._generate_configure = MagicMock(return_value=(0, [[""]], [[""]]))
+            autoconf._clean_source_paths = MagicMock()
+
+            err, stdout, _ = autoconf.build(build)
+
+        assert err == 0
+        assert "built" in stdout
+        autoconf._generate_configure.assert_not_called()
+        autoconf._clean_source_paths.assert_not_called()
+
+    def test_generation_failure_returns_error_and_cleans(
+        self, mock_project, mock_shell
+    ):
+        source_dir = mock_shell.get_source_dir()
+        before = set()
+        after = {os.path.join(source_dir, "configure")}
+
+        runner = MagicMock()
+        runner.run_building.return_value = (0, "built", "")
+
+        build = Build(
+            build_machine=MachineInfo(Arch.X86, None, None),
+            run_machine=MachineInfo(Arch.X86, None, None),
+            build_name="test",
+            executables=[],
+            toolchain=None,
+            sysroot=None,
+            compiler_flags=None,
+            config_flags=None,
+        )
+
+        with patch(
+            "amphimixis.core.build_systems.autoconf.Shell",
+            return_value=mock_shell,
+        ):
+            autoconf = Autoconf(mock_project, runner=runner)
+            autoconf._list_source_paths = MagicMock(side_effect=[before, after])
+            autoconf._find_autoconf_dir = MagicMock(return_value=source_dir)
+            autoconf._generate_configure = MagicMock(
+                return_value=(1, [["gen stdout"]], [["gen stderr"]])
+            )
+            autoconf._clean_source_paths = MagicMock()
+
+            err, stdout, stderr = autoconf.build(build)
+
+        assert err == 1
+        assert "gen stdout" in stdout
+        assert "gen stderr" in stderr
+        autoconf._clean_source_paths.assert_called_once_with(mock_shell, after)
+        runner.run_building.assert_not_called()
+
+    def test_generated_autotools_files_cleaned(self, mock_project, mock_shell):
+        source_dir = mock_shell.get_source_dir()
+        runner = MagicMock()
+        runner.run_building.return_value = (0, "built", "")
+
+        build = Build(
+            build_machine=MachineInfo(Arch.X86, None, None),
+            run_machine=MachineInfo(Arch.X86, None, None),
+            build_name="test",
+            executables=[],
+            toolchain=None,
+            sysroot=None,
+            compiler_flags=None,
+            config_flags=None,
+        )
+
+        mock_shell.run.side_effect = [
+            (0, [["/mock/source/tests/"]], [[""]]),
+            (0, [["/mock/source/configure.ac"]], [[""]]),
+            (1, [[""]], [[""]]),
+            (1, [[""]], [[""]]),
+            (0, [["generated"]], [[""]]),
+            (
+                0,
+                [
+                    [
+                        "/mock/source/tests/",
+                        "/mock/source/configure",
+                        "/mock/source/Makefile.in",
+                        "/mock/source/aclocal.m4",
+                    ]
+                ],
+                [[""]],
+            ),
+            (0, [], []),
+            (0, [["cfg"]], [[""]]),
+            (0, [], []),
+        ]
+
+        with (
+            patch(
+                "amphimixis.core.build_systems.autoconf.Shell",
+                return_value=mock_shell,
+            ),
+            patch(
+                "amphimixis.core.build_systems.autoconf.BuildSystem.find_relative_path",
+                return_value=file,
+            ),
+        ):
+            autoconf = Autoconf(mock_project, runner=runner)
+            err, stdout, _ = autoconf.build(build)
+
+        assert err == 0
+        assert "built" in stdout
+        assert runner.run_building.call_count == 1
+
+        calls = [str(call) for call in mock_shell.run.call_args_list]
+        assert "find /mock/source/ -mindepth 1" in calls[0]
+        assert "find /mock/source/ -mindepth 1" in calls[5]
+        assert "test -f /mock/source/autogen.sh" in calls[2]
+        assert "test -f /mock/source/bootstrap" in calls[3]
+        assert "autoreconf --install" in calls[4]
+        assert "cd /mock/builds/project_build/test" in calls[6]
+        assert "rm -rf /mock/source/" in calls[8]
+        assert "/mock/source/Makefile.in" in calls[8]
+        assert "/mock/source/aclocal.m4" in calls[8]
+        assert "/mock/source/configure" in calls[8]
+        assert "tests/" not in calls[8]
+
+    def test_warning_on_build(self, mock_project, mock_shell):
+        runner = MagicMock()
+        runner.run_building.return_value = (0, "", "")
+
+        build = Build(
+            build_machine=MachineInfo(Arch.X86, None, None),
+            run_machine=MachineInfo(Arch.X86, None, None),
+            build_name="test",
+            executables=[],
+            toolchain=None,
+            sysroot=None,
+            compiler_flags=None,
+            config_flags=None,
+        )
+
+        with (
+            patch(
+                "amphimixis.core.build_systems.autoconf.Shell",
+                return_value=mock_shell,
+            ),
+            patch(
+                "amphimixis.core.build_systems.autoconf.BuildSystem.find_relative_path",
+                return_value=file,
+            ),
+        ):
+            autoconf = Autoconf(mock_project, runner=runner)
+            autoconf._ui = MagicMock()
+            autoconf.build(build)
+
+        assert autoconf._ui.send_warning.call_count == 1
 
 
 @pytest.mark.unit

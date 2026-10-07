@@ -113,7 +113,7 @@ class Shell:
 
             # Close stdin since reading from stdin
             # leads to blocking if the command is waiting for input.
-            cmd += " 0<&-"
+            cmd += " 0</dev/null"
             self._shell.run(cmd)
 
             # newline added in case of it is missing in the previous output line
