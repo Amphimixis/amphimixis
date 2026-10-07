@@ -1,8 +1,6 @@
 platforms:
 - id: 1
   arch: x86
-- id: 2
-  arch: riscv
 recipes:
 - id: 1
   config_flags: -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBUILD_TESTING=ON
@@ -24,5 +22,5 @@ builds:
   run_machine: 1
   recipe_id: 1
 - build_machine: 1
-  run_machine: 2
+  run_machine: 1
   recipe_id: 2
