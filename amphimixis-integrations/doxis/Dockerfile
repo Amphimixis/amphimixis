@@ -34,18 +34,19 @@ ENV PATH="/root/.bun/bin:${PATH}"
 RUN curl -fsSL https://opencode.ai/install | bash -s -- --version 1.18.30
 ENV PATH="/root/.opencode/bin:${PATH}"
 
+WORKDIR /root/.config/opencode
+RUN bun add @opencode-ai/plugin@1.18.30 @opencode-ai/sdk@1.18.30
+
+ENV OPENCODE_DATA_HOME=/root/.local/share/opencode
+WORKDIR /work
+
 COPY . /opt/amphimixis-repo
 RUN pip3 install /opt/amphimixis-repo \
     && rm -rf /opt/amphimixis-repo
 
 RUN amixis opencode install --global
 
-WORKDIR /root/.config/opencode
-RUN bun add @opencode-ai/plugin@1.18.30 @opencode-ai/sdk@1.18.30
-
 COPY amphimixis-integrations/doxis/docker-entrypoint.sh /usr/local/bin/amphimixis-entrypoint.sh
 RUN chmod +x /usr/local/bin/amphimixis-entrypoint.sh
 
-ENV OPENCODE_DATA_HOME=/root/.local/share/opencode
-WORKDIR /work
 ENTRYPOINT ["/usr/local/bin/amphimixis-entrypoint.sh"]

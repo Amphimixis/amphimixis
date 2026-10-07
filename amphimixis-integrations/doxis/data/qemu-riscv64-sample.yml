@@ -11,10 +11,13 @@ recipes:
     cxx_flags: -O3 -march=native -g
   jobs: 4
 - id: 2
-  config_flags: -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBUILD_TESTING=ON -DCMAKE_C_COMPILER=/usr/bin/riscv64-linux-gnu-gcc -DCMAKE_CXX_COMPILER=/usr/bin/riscv64-linux-gnu-g++
+  config_flags: -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBUILD_TESTING=ON
   compiler_flags:
     c_flags: -O3 -march=rv64gcvb -g
     cxx_flags: -O3 -march=rv64gcvb -g
+  toolchain:
+    c_compiler: /usr/bin/riscv64-linux-gnu-gcc
+    cxx_compiler: /usr/bin/riscv64-linux-gnu-g++
   jobs: 4
 builds:
 - build_machine: 1
