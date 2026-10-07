@@ -88,6 +88,7 @@ Quick Start
    amphimixis-ai
    usage_guide
    config_instruction
+   config_qemu
    input
 
 .. toctree::

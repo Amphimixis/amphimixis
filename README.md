@@ -59,6 +59,7 @@ See the [Usage Guide → Quick Start](docs/usage_guide.md#quick-start) to try Am
 
 - [Usage Guide](docs/usage_guide.md) — installation options, workspace setup, all commands, perf events, SSH auth
 - [Configuration File Guide](docs/config_instruction.md) — full `input.yml` schema reference
+- [Qemu Option Guide](docs/config_qemu.md) — provisioning a local QEMU virtual machine via the `qemu` option
 - [Troubleshooting](docs/troubleshooting.md) — common issues and solutions
 - [Contributing Guide](CONTRIBUTING.md) — how to contribute, local checks, pull request guidelines
 - [Usage Examples](docs/usage_examples.md) — practical migration and profiling scenarios
