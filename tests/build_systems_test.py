@@ -23,12 +23,12 @@ from amphimixis.core.general import (
 
 @pytest.fixture
 def local_machine():
-    return MachineInfo(Arch.X86, None, None)
+    return MachineInfo(Arch.X86, None, None, None)
 
 
 @pytest.fixture
 def remote_machine():
-    return MachineInfo(Arch.X86, "192.168.1.100", None)
+    return MachineInfo(Arch.X86, "192.168.1.100", None, None)
 
 
 @pytest.fixture
@@ -114,8 +114,8 @@ class TestMake:
         toolchain.set(ToolchainAttrs.C_COMPILER, "/usr/bin/gcc")
 
         build = Build(
-            build_machine=MachineInfo(Arch.X86, None, None),
-            run_machine=MachineInfo(Arch.X86, None, None),
+            build_machine=MachineInfo(Arch.X86, None, None, None),
+            run_machine=MachineInfo(Arch.X86, None, None, None),
             build_name="test_build",
             executables=[],
             toolchain=toolchain,
@@ -141,8 +141,8 @@ class TestMake:
     def test_parallel_build(self, mock_project, mock_shell):
         jobs = 1
         build = Build(
-            build_machine=MachineInfo(Arch.X86, None, None),
-            run_machine=MachineInfo(Arch.X86, None, None),
+            build_machine=MachineInfo(Arch.X86, None, None, None),
+            run_machine=MachineInfo(Arch.X86, None, None, None),
             build_name="test_build",
             executables=[],
             toolchain=None,
@@ -172,8 +172,8 @@ class TestMake:
             make._ui = MagicMock()
             make.build(
                 Build(
-                    build_machine=MachineInfo(Arch.X86, None, None),
-                    run_machine=MachineInfo(Arch.X86, None, None),
+                    build_machine=MachineInfo(Arch.X86, None, None, None),
+                    run_machine=MachineInfo(Arch.X86, None, None, None),
                     build_name="test",
                     executables=[],
                     toolchain=None,
@@ -192,8 +192,8 @@ class TestNinja:
     def test_parallel_build(self, mock_project, mock_shell):
         jobs = 1
         build = Build(
-            build_machine=MachineInfo(Arch.X86, None, None),
-            run_machine=MachineInfo(Arch.X86, None, None),
+            build_machine=MachineInfo(Arch.X86, None, None, None),
+            run_machine=MachineInfo(Arch.X86, None, None, None),
             build_name="test_build",
             executables=[],
             toolchain=None,
@@ -272,8 +272,8 @@ class TestCMake:
     def test_parallel_build(self, mock_project, mock_shell):
         jobs = 1
         build = Build(
-            build_machine=MachineInfo(Arch.X86, None, None),
-            run_machine=MachineInfo(Arch.X86, None, None),
+            build_machine=MachineInfo(Arch.X86, None, None, None),
+            run_machine=MachineInfo(Arch.X86, None, None, None),
             build_name="test_build",
             executables=[],
             toolchain=None,
@@ -303,8 +303,8 @@ class TestCMake:
         toolchain.set(ToolchainAttrs.C_COMPILER, "/usr/bin/gcc")
 
         build = Build(
-            build_machine=MachineInfo(Arch.X86, None, None),
-            run_machine=MachineInfo(Arch.X86, None, None),
+            build_machine=MachineInfo(Arch.X86, None, None, None),
+            run_machine=MachineInfo(Arch.X86, None, None, None),
             build_name="cmake_build",
             executables=[],
             toolchain=toolchain,
@@ -340,8 +340,8 @@ class TestCMake:
             cmake = CMake(mock_project, runner=ninja_runner)
 
             build = Build(
-                build_machine=MachineInfo(Arch.X86, None, None),
-                run_machine=MachineInfo(Arch.X86, None, None),
+                build_machine=MachineInfo(Arch.X86, None, None, None),
+                run_machine=MachineInfo(Arch.X86, None, None, None),
                 build_name="test",
                 executables=[],
                 toolchain=None,
@@ -367,8 +367,8 @@ class TestCMake:
             cmake = CMake(mock_project, runner=make_runner)
 
             build = Build(
-                build_machine=MachineInfo(Arch.X86, None, None),
-                run_machine=MachineInfo(Arch.X86, None, None),
+                build_machine=MachineInfo(Arch.X86, None, None, None),
+                run_machine=MachineInfo(Arch.X86, None, None, None),
                 build_name="test",
                 executables=[],
                 toolchain=None,
@@ -394,8 +394,8 @@ class TestCMake:
             cmake = CMake(mock_project, runner=ninja_runner)
 
             build = Build(
-                build_machine=MachineInfo(Arch.X86, None, None),
-                run_machine=MachineInfo(Arch.X86, None, None),
+                build_machine=MachineInfo(Arch.X86, None, None, None),
+                run_machine=MachineInfo(Arch.X86, None, None, None),
                 build_name="test",
                 executables=[],
                 toolchain=None,
@@ -416,8 +416,8 @@ class TestCMake:
         ]
 
         build = Build(
-            build_machine=MachineInfo(Arch.X86, None, None),
-            run_machine=MachineInfo(Arch.X86, None, None),
+            build_machine=MachineInfo(Arch.X86, None, None, None),
+            run_machine=MachineInfo(Arch.X86, None, None, None),
             build_name="test",
             executables=[],
             toolchain=None,
@@ -448,8 +448,8 @@ class TestBuildSystemIntegration:
         compiler_flags.set(CompilerFlagsAttrs.C_FLAGS, "-O3")
 
         build = Build(
-            build_machine=MachineInfo(Arch.X86, None, None),
-            run_machine=MachineInfo(Arch.X86, None, None),
+            build_machine=MachineInfo(Arch.X86, None, None, None),
+            run_machine=MachineInfo(Arch.X86, None, None, None),
             build_name="test",
             executables=[],
             toolchain=toolchain,

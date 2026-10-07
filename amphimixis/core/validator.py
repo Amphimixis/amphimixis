@@ -96,7 +96,10 @@ def _is_valid_platform(platform: dict[str, int | str]):
 
     arch = platform.get("arch")
     if not isinstance(arch, str) or arch.lower() not in Arch:
-        _notify_about_error(f"Invalid `arch` in platform {pl_id}: {arch}")
+        supported_archs = ", ".join(arch.value for arch in Arch)
+        _notify_about_error(
+            f"Invalid arch in platform {pl_id}: {arch}. Supported: {supported_archs}"
+        )
 
     address = platform.get("address")
     if address is not None:
@@ -114,6 +117,10 @@ def _is_valid_platform(platform: dict[str, int | str]):
     port = platform.get("port", DEFAULT_PORT)
     if not isinstance(port, int) or not 1 <= port <= 65535:
         _notify_about_error(f"Invalid `port` in platform {pl_id}: {port}")
+
+    events = platform.get("events")
+    if not isinstance(events, list | str | None):
+        _notify_about_error(f"Invalid events in platform {pl_id}: {events}")
 
 
 def _is_valid_recipe(recipe: dict[str, int | str]):
