@@ -779,7 +779,17 @@ class Profiler:
 
     def _find_executables(self) -> list[str]:
         error, stdout, stderr = self.shell.run(
-            f"cd {self.build_path}", 'find -type f -executable -name "*test*"'
+            f"cd {self.build_path}",
+            "find . -type f -executable "
+            r' ! -path "*/\.*" '
+            ' ! -path "*/CMakeFiles/*" '
+            ' ! -path "*/_CPack_Packages/*" '
+            ' ! -path "*/Testing/*" '
+            ' ! -name "*.so" '
+            ' ! -name "*.so.*" '
+            ' ! -name "*.a" '
+            ' ! -name "*.o" '
+            "| sort",
         )
 
         if error != 0:
@@ -788,7 +798,27 @@ class Profiler:
             )
             return []
 
-        return [os.path.normpath(line.strip()) for line in stdout[1]]
+        executables = []
+        for line in stdout[1]:
+            line = line.strip()
+            if not line:
+                continue
+
+            if line.startswith("./"):
+                line = line[2:]
+
+            norm = os.path.normpath(line)
+            executables.append(norm)
+
+        seen = set()
+        result = []
+        for e in executables:
+            if e in seen:
+                continue
+            seen.add(e)
+            result.append(e)
+
+        return result
 
 
 if __name__ == "__main__":
