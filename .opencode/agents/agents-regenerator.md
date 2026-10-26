@@ -385,7 +385,7 @@ Output your decision clearly: `DECISION: [Full | Partial: <affected agents> | No
    | 4 | Remote platforms have `username` and `port` specified | |
    | 5 | Recipes include test-building options (e.g., `-DBUILD_TESTING=ON` or equivalent) | |
    | 6 | `executables` paths are relative to the build directory (no leading `/`) | |
-   | 7 | qemu-user builds have emulator prefix in `executables` entries | |
+   | 7 | qemu-user builds do NOT have emulator prefix in `executables` entries | |
    | 8 | qemu-system platforms have valid reachable `address` and `port` | |
    | 9 | YAML references (`&` / `*`) resolve correctly | |
 
