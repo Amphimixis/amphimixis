@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Usage:
-#   process-projects.sh <list-file> [--limit N] [--skip M] [--config PATH] [--model PROVIDER/MODEL]
-#                      [--workdir DIR]
+#   process-projects.sh [<list-file>] [--limit N] [--skip M] [--config PATH] [--model PROVIDER/MODEL]
+#                      [--workdir DIR | --resume DIR]
 set -euo pipefail
 
 DOXIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -11,14 +11,31 @@ CONTAINER_NAME="${AMPHIMIXIS_CONTAINER_NAME:-amphimixis-worker}"
 EXTRA_DOCKER_ARGS=()
 list_file=""
 limit=""
-skip="0"
+skip=""
 config_file=""
 model=""
 workdir=""
+resume_dir=""
 
 usage() {
   sed -n '2,4p' "$0"
   exit 1
+}
+
+load_resume_context() {
+  local workspace="$1"
+  local metadata
+  if [ ! -d "$workspace" ] || [ ! -f "$workspace/pipeline.log" ] || [ ! -f "$workspace/input.yml" ]; then
+    echo "--resume requires an existing workspace with pipeline.log and input.yml" >&2
+    return 2
+  fi
+
+  metadata="$(sed -nE 's/^([0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2} )?\[entrypoint\] opencode: starting pipeline for ([[:alnum:]_.+-]+) \(model=([^()[:space:]]+)\)$/\2 \3/p' "$workspace/pipeline.log" | tail -n 1)"
+  if [ -z "$metadata" ]; then
+    echo "--resume: no valid project/model startup entry in $workspace/pipeline.log" >&2
+    return 2
+  fi
+  read -r resume_project resume_model <<< "$metadata"
 }
 
 while [ "$#" -gt 0 ]; do
@@ -27,6 +44,7 @@ while [ "$#" -gt 0 ]; do
     --skip) skip="${2:?}"; shift 2 ;;
     --config) config_file="${2:?}"; shift 2 ;;
     --model) model="${2:?}"; shift 2 ;;
+    --resume) resume_dir="${2:?}"; shift 2 ;;
     --workdir) workdir="${2:?}"; shift 2 ;;
     --extra-docker) EXTRA_DOCKER_ARGS+=("$2"); shift 2 ;;
     -h|--help) usage ;;
@@ -35,11 +53,31 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
-[ -n "$list_file" ] || { echo "missing list file"; usage; }
-[ -f "$list_file" ] || { echo "list file not found: $list_file" >&2; exit 1; }
-[[ "$skip" =~ ^[0-9]+$ ]] || { echo "--skip must be a non-negative integer" >&2; exit 2; }
-if [ -n "$limit" ]; then
-  [[ "$limit" =~ ^[0-9]+$ ]] || { echo "--limit must be a non-negative integer" >&2; exit 2; }
+if [ -n "$resume_dir" ]; then
+  if [ -n "$list_file" ] || [ -n "$limit" ] || [ -n "$skip" ] || [ -n "$workdir" ]; then
+    echo "--resume cannot be combined with a list file, --limit, --skip, or --workdir" >&2
+    exit 2
+  fi
+  load_resume_context "$resume_dir"
+  resume_dir="$(readlink -f "$resume_dir")"
+  projects=("$resume_project")
+  model="${model:-$resume_model}"
+else
+  [ -n "$list_file" ] || { echo "missing list file"; usage; }
+  [ -f "$list_file" ] || { echo "list file not found: $list_file" >&2; exit 1; }
+  skip="${skip:-0}"
+  [[ "$skip" =~ ^[0-9]+$ ]] || { echo "--skip must be a non-negative integer" >&2; exit 2; }
+  if [ -n "$limit" ]; then
+    [[ "$limit" =~ ^[0-9]+$ ]] || { echo "--limit must be a non-negative integer" >&2; exit 2; }
+  fi
+  mapfile -t projects < <(awk 'NF { print $1 }' "$list_file")
+  if [ "${#projects[@]}" -gt 0 ]; then
+    if [ -n "$limit" ]; then
+      projects=("${projects[@]:$skip:$limit}")
+    elif [ "$skip" -gt 0 ]; then
+      projects=("${projects[@]:$skip}")
+    fi
+  fi
 fi
 
 command -v docker >/dev/null 2>&1 || { echo "docker is required" >&2; exit 1; }
@@ -57,27 +95,7 @@ if [ -n "$workdir" ]; then
   workdir="$(readlink -f "$workdir")"
 fi
 
-mapfile -t projects < <(awk 'NF { print $1 }' "$list_file")
-
-if [ "${#projects[@]}" -gt 0 ]; then
-  if [ -n "$limit" ]; then
-    projects=("${projects[@]:$skip:$limit}")
-  elif [ "$skip" -gt 0 ]; then
-    projects=("${projects[@]:$skip}")
-  fi
-fi
-
-WORK_BASE="$DOXIS_DIR/work"
-RESUME=0
-if [ -n "$workdir" ]; then
-  if [ "${#projects[@]}" -eq 1 ]; then
-    RESUME=1
-  else
-    WORK_BASE="$workdir"
-  fi
-else
-  mkdir -p "$WORK_BASE"
-fi
+WORK_BASE="${workdir:-$DOXIS_DIR/work}"
 
 touch "$DOXIS_DIR/state"
 
@@ -92,29 +110,24 @@ next_work_dir() {
 
 for project in "${projects[@]}"; do
   [ -n "$project" ] || continue
-  if grep -qxF "$project" "$DOXIS_DIR/state"; then
+  if [ -z "$resume_dir" ] && grep -qxF "$project" "$DOXIS_DIR/state"; then
     echo "== $project: already processed, skipping"
     continue
   fi
 
-  project_dir=""
-  resume_mode=0
-  if [ "$RESUME" -eq 1 ]; then
-    project_dir="$workdir"
-    resume_mode=1
+  if [ -n "$resume_dir" ]; then
+    project_dir="$resume_dir"
   else
     project_dir="$(next_work_dir "$project")"
     mkdir -p "$project_dir"
   fi
   echo "== $(date '+%F %T') pipeline: $project -> $project_dir =="
 
-  data_file="$DOXIS_DIR/data/$project.yml"
-  [ -f "$data_file" ] || data_file="$DOXIS_DIR/data/$project.yaml"
-  [ -f "$data_file" ] || data_file="$DOXIS_DIR/data/sample.yml"
-  [ -f "$data_file" ] || { echo "  no data file or sample.yml, skipping $project"; continue; }
-  if [ "$resume_mode" -eq 1 ] && [ -f "$project_dir/input.yml" ]; then
-    echo "  keeping existing input.yml (--workdir resume mode)"
-  else
+  if [ -z "$resume_dir" ]; then
+    data_file="$DOXIS_DIR/data/$project.yml"
+    [ -f "$data_file" ] || data_file="$DOXIS_DIR/data/$project.yaml"
+    [ -f "$data_file" ] || data_file="$DOXIS_DIR/data/sample.yml"
+    [ -f "$data_file" ] || { echo "  no data file or sample.yml, skipping $project"; continue; }
     cp "$data_file" "$project_dir/input.yml"
   fi
 
@@ -126,6 +139,9 @@ for project in "${projects[@]}"; do
     -e "PUID=$(id -u)"
     -e "PGID=$(id -g)"
   )
+  if [ -n "$resume_dir" ]; then
+    docker_args+=(-e "RESUME=1")
+  fi
   if [ -n "$model" ]; then
     docker_args+=(-e "MODEL=$model")
   fi
@@ -139,14 +155,16 @@ for project in "${projects[@]}"; do
 
   trap 'docker stop "$CONTAINER_NAME" >/dev/null 2>&1 || true; exit 130' INT TERM
   
-  set +e
-  if [ "$resume_mode" -eq 1 ]; then
+  if [ -n "$resume_dir" ]; then
     echo "== $(date '+%F %T') resume run: $project -> $project_dir ==" >> "$project_dir/pipeline.log"
+    set +e
     docker run "${docker_args[@]}" 2>&1 | awk '{ print strftime("%Y-%m-%d %H:%M:%S"), $0; fflush() }' >> "$project_dir/pipeline.log"
+    rc=${PIPESTATUS[0]}
   else
+    set +e
     docker run "${docker_args[@]}" 2>&1 | awk '{ print strftime("%Y-%m-%d %H:%M:%S"), $0; fflush() }' > "$project_dir/pipeline.log"
+    rc=${PIPESTATUS[0]}
   fi
-  rc=${PIPESTATUS[0]}
   set -e
 
   echo "  container exit: $rc"
@@ -155,7 +173,7 @@ for project in "${projects[@]}"; do
   fi
 
   if find "$project_dir" -type f -name '*report.md' -print -quit | grep -q .; then
-    echo "$project" >> "$DOXIS_DIR/state"
+    grep -qxF "$project" "$DOXIS_DIR/state" || echo "$project" >> "$DOXIS_DIR/state"
     echo "== $project: DONE, artifacts in $project_dir"
   else
     echo "== $project: FAILED (no report)"

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Usage:
-#   build-and-run.sh <list-file> [--limit N] [--skip M] [--repo URL]
-#                      [--config PATH] [--model PROVIDER/MODEL] [--workdir DIR]
+#   build-and-run.sh [<list-file>] [--limit N] [--skip M] [--repo URL]
+#                      [--config PATH] [--model PROVIDER/MODEL] [--workdir DIR | --resume DIR]
 #                      [--no-build] [--no-run] [--extra-docker ARG]
 set -euo pipefail
 
@@ -16,6 +16,8 @@ SKIP_BUILD=0
 SKIP_RUN=0
 list_file=""
 run_args=()
+resume_dir=""
+selection_args=0
 
 usage() {
   sed -n '2,5p' "$0"
@@ -23,11 +25,12 @@ usage() {
 }
 while [ "$#" -gt 0 ]; do
   case "$1" in
-    --limit) run_args+=(--limit "${2:?}"); shift 2 ;;
-    --skip) run_args+=(--skip "${2:?}"); shift 2 ;;
+    --limit) selection_args=1; run_args+=(--limit "${2:?}"); shift 2 ;;
+    --skip) selection_args=1; run_args+=(--skip "${2:?}"); shift 2 ;;
     --config) run_args+=(--config "${2:?}"); shift 2 ;;
     --model) run_args+=(--model "${2:?}"); shift 2 ;;
-    --workdir) run_args+=(--workdir "${2:?}"); shift 2 ;;
+    --resume) resume_dir="${2:?}"; run_args+=(--resume "${2:?}"); shift 2 ;;
+    --workdir) selection_args=1; run_args+=(--workdir "${2:?}"); shift 2 ;;
     --extra-docker) run_args+=(--extra-docker "${2:?}"); shift 2 ;;
     --repo) PROJECT_REPO="${2:?}"; shift 2 ;;
     --prompt) PIPELINE_PROMPT="${2:?}"; shift 2 ;;
@@ -40,7 +43,15 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
-[[ "$SKIP_RUN" -eq 0 && -z "$list_file" ]] && { echo "missing list file" >&2; usage; }
+if [ -n "$resume_dir" ]; then
+  if [ -n "$list_file" ] || [ "$selection_args" -eq 1 ]; then
+    echo "--resume cannot be combined with a list file, --limit, --skip, or --workdir" >&2
+    exit 2
+  fi
+elif [ "$SKIP_RUN" -eq 0 ] && [ -z "$list_file" ]; then
+  echo "missing list file" >&2
+  usage
+fi
 
 command -v docker >/dev/null 2>&1 || { echo "docker is required" >&2; exit 1; }
 
@@ -63,7 +74,10 @@ fi
 
 if [ "$SKIP_RUN" -eq 0 ]; then
   echo "== running pipeline: $RUN ${run_args[*]}"
-  exec bash "$RUN" "$list_file" "${run_args[@]}"
+  if [ -n "$list_file" ]; then
+    run_args=("$list_file" "${run_args[@]}")
+  fi
+  exec bash "$RUN" "${run_args[@]}"
 else
   echo "== skipping pipeline run (--no-run)"
 fi

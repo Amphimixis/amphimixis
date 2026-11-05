@@ -53,7 +53,7 @@ def _add_run_args(parser: ArgumentParser) -> None:
         default=None,
         metavar="list_file",
         help="file listing project names, one per line "
-        "(required; comes second after 'build-image')",
+        "(required unless resuming; comes second after 'build-image')",
     )
     parser.add_argument(
         "--limit",
@@ -65,7 +65,7 @@ def _add_run_args(parser: ArgumentParser) -> None:
     parser.add_argument(
         "--skip",
         type=int,
-        default=0,
+        default=None,
         metavar="M",
         help="skip first M projects (default: 0)",
     )
@@ -98,14 +98,21 @@ def _add_run_args(parser: ArgumentParser) -> None:
         metavar="TEXT",
         help="pipeline prompt overriding the generated one ",
     )
-    parser.add_argument(
+    workspace = parser.add_mutually_exclusive_group()
+    workspace.add_argument(
         "--workdir",
         type=str,
         default=None,
         metavar="PATH",
-        help="host work directory: with a single project it is reused "
-        "as /work (resume mode, existing input.yml kept, log appended); "
-        "with two or more projects <project>_<i> dirs are created inside it",
+        help="parent directory for new numbered <project>_<i> workspaces",
+    )
+    workspace.add_argument(
+        "--resume",
+        type=str,
+        default=None,
+        metavar="PATH",
+        help="resume an existing workspace without a list file; recover project "
+        "and model from pipeline.log and read it before continuing",
     )
     parser.add_argument(
         "--extra-docker",

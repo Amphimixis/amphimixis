@@ -3,6 +3,7 @@
 #   PROJECT_NAME   source-package / project name (required)
 #   PROJECT_REPO   optional explicit GitHub URL (overrides the agent's search)
 #   PIPELINE_PROMPT additional prompt to the agent
+#   RESUME         set to 1 to read pipeline.log and continue previous work
 #   MODEL          opencode model in the form provider/model (default: opencode/big-pickle)
 #   OPENCODE_CONFIG  path to an optional opencode config file (opencode env var)
 set -euo pipefail
@@ -22,6 +23,13 @@ else
   REPO_INSTRUCTION="Search GitHub/GitLab for the active repository of the source package \"${PROJECT_NAME}\""
 fi
 
+LOG_INSTRUCTION="Do not read pipeline.log file."
+if [ "${RESUME:-0}" = "1" ]; then
+  [ -f /work/pipeline.log ] || { echo "resume requires /work/pipeline.log" >&2; exit 2; }
+  REPO_INSTRUCTION="Reuse the project repository identified in pipeline.log and the existing workspace."
+  LOG_INSTRUCTION="Before taking any actions, read /work/pipeline.log to recover information about the processed project and already performed actions. Inspect the existing artifacts and continue from the first unfinished phase. Reuse the existing repository and completed results; do not clone or repeat completed work unnecessarily."
+fi
+
 PROMPT="$(cat <<EOF
 You are applying the Amphimixis migration readiness pipeline to the single project "${PROJECT_NAME}" inside this disposable container.
 
@@ -31,7 +39,7 @@ CONTEXT:
 - ${REPO_INSTRUCTION}
 
 RULES:
-- Do not read pipeline.log file.
+- ${LOG_INSTRUCTION}
 - When every phase is finished and the report is saved, print exactly the line: WORK ON THE ${PROJECT_NAME} IS COMPLETED
 
 ADDITIONAL INSTRUCTIONS:

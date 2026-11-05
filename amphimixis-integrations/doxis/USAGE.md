@@ -17,7 +17,7 @@ generated or installed on the host.
 
 ## Current constraints
 
-- The pipeline processes a **list of project names** (not arbitrary URLs). The
+- Fresh runs process a **list of project names** (not arbitrary URLs). The
   list file should contain one project name per line.
 - The LLM **model defaults to `opencode/big-pickle`**; override it with
   `--model PROVIDER/MODEL`.
@@ -27,7 +27,7 @@ generated or installed on the host.
 - Each container uses its **`input.yml` from `doxis/data/<project>.yml`**
   (or `.yaml`) **if specified for that project, otherwise
   `doxis/data/sample.yml`** is used as the input.
-- Every run gets a fresh, never-cleaned numbered work directory
+- Every fresh run gets a never-cleaned numbered work directory
   `doxis/work/<project>_<i>`, where `<i>` is the ordinal equal to the number of existing work directories for that project plus one.
   The first run
   creates `doxis/work/<project>_1`. All artifacts (report, `improvements.json`,
@@ -78,7 +78,8 @@ AMPHIMIXIS_IMAGE=my-tag amixis doxis run projects
   builds (fails if the image is missing — build it first).
 - `amixis doxis run build-image <list-file> [flags]` builds the image
   and then runs the pipeline.
-- `run` accepts `--limit/--skip/--repo/--config/--model/--prompt/--workdir/` `--extra-docker/--image`;
+- `amixis doxis run --resume PATH [flags]` resumes directly from a workspace.
+- `run` accepts `--limit/--skip/--repo/--config/--model/--prompt/--workdir/--resume/` `--extra-docker/--image`;
   `build-image` accepts only `--image`.
 
 Notes:
@@ -94,14 +95,15 @@ Arguments:
 
 | Argument | Meaning |
 |---|---|
-| `<list-file>` | File listing project names, one per line (should come first) |
+| `<list-file>` | File listing project names, one per line (required for fresh runs only) |
 | `--limit N` | Process only the first N projects |
 | `--skip M` | Skip first M projects |
 | `--repo URL` | Explicit project repository URL, passed to the container as `PROJECT_REPO` (overrides the agent's search, one for all containers) |
 | `--config PATH` | Custom opencode config (JSON), mounted read-only and loaded via `OPENCODE_CONFIG` |
-| `--model PROVIDER/MODEL` | LLM model for opencode (default: `opencode/big-pickle`) |
+| `--model PROVIDER/MODEL` | LLM model for opencode (default: `opencode/big-pickle`; resume restores the logged model unless overridden) |
 | `--no-build` | Skip the image build step and run against the existing image |
-| `--workdir PATH` | Host work directory: with a single project (or `--limit 1`) it is reused directly as `/work` (resume mode: existing `input.yml` is kept, `pipeline.log` is appended); with two or more projects numbered `<project>_<i>` dirs are created inside it instead of `doxis/work` |
+| `--workdir PATH` | Parent for new numbered `<project>_<i>` workspaces, regardless of the number of selected projects (default: `doxis/work`) |
+| `--resume PATH` | Recover the project and model from an existing workspace without a list file; preserve `input.yml`, append to `pipeline.log`, and instruct OpenCode to read the log before continuing |
 | `--extra-docker ARG` | Extra argument(s) passed through to `docker run` (repeatable) |
 | `-h` / `--help` | Print usage |
 
@@ -111,8 +113,27 @@ with the `AMPHIMIXIS_IMAGE` environment variable.
 ### Resuming interrupted work
 
 ```bash
-./build-and-run.sh projects --workdir doxis/work/util-linux_2 --no-build --limit 1
-amixis doxis run projects --limit 1 --workdir doxis/work/util-linux_2
+./build-and-run.sh --resume doxis/work/util-linux_1 --no-build
+amixis doxis run --resume doxis/work/util-linux_1
+```
+
+Resume requires an existing `input.yml` and `pipeline.log`, and bypasses the
+completed-project state check. It recovers the project and model from the latest
+matching `[entrypoint] opencode: starting pipeline for <project> (model=<model>)`
+entry anywhere in the log, including timestamped entries. Missing or malformed
+startup metadata produces an error before the container starts or the log is
+changed. Validation runs in `process-projects.sh`, after any requested image build.
+Use `--model` to override the recovered model.
+
+A list file, `--limit`, `--skip`, and `--workdir` cannot be combined with
+`--resume`. Other runtime flags remain optional. OpenCode reads the log to
+recover project context and completed actions, checks existing artifacts, and
+continues unfinished work.
+
+To start fresh under a custom parent directory:
+
+```bash
+amixis doxis run projects --workdir /path/to/workspaces
 ```
 
 ### Directory layout
