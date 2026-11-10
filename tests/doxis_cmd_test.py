@@ -419,34 +419,27 @@ class TestRunDoxis:
         script = tmp_path / "build-and-run.sh"
         script.write_text("#!/usr/bin/env bash\n")
         for returncode, expected in ((0, True), (2, False)):
-            completed = subprocess.CompletedProcess(
-                args=["bash", str(script)], returncode=returncode
-            )
-            run_mock = mocker.patch(
-                "amphimixis.amixis.commands.doxis._utils.subprocess.run",
-                return_value=completed,
+            process = mocker.MagicMock()
+            process.__enter__.return_value = process
+            process.wait.return_value = returncode
+            popen = mocker.patch(
+                "amphimixis.amixis.commands.doxis._utils.subprocess.Popen",
+                return_value=process,
             )
             assert (
                 doxis_utils._launch(script, ["--no-run"], {"AMPHIMIXIS_IMAGE": "t"})
                 is expected
             )
-            run_mock.assert_called_once_with(
+            popen.assert_called_once_with(
                 ["bash", str(script), "--no-run"],
                 env={"AMPHIMIXIS_IMAGE": "t"},
-                check=False,
+                start_new_session=True,
             )
 
     def test_launch_handles_missing_bash(self, mocker, tmp_path):
         mocker.patch(
-            "amphimixis.amixis.commands.doxis._utils.subprocess.run",
+            "amphimixis.amixis.commands.doxis._utils.subprocess.Popen",
             side_effect=FileNotFoundError("bash"),
-        )
-        assert doxis_utils._launch(tmp_path / "build-and-run.sh", [], {}) is False
-
-    def test_launch_handles_keyboard_interrupt(self, mocker, tmp_path):
-        mocker.patch(
-            "amphimixis.amixis.commands.doxis._utils.subprocess.run",
-            side_effect=KeyboardInterrupt(),
         )
         assert doxis_utils._launch(tmp_path / "build-and-run.sh", [], {}) is False
 

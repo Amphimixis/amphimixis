@@ -108,6 +108,40 @@ next_work_dir() {
   printf '%s' "$WORK_BASE/${project}_${i}"
 }
 
+ACTIVE_CONTAINER=""
+DOCKER_PID=""
+LOGGER_PID=""
+
+cleanup_container() {
+  [ -n "$ACTIVE_CONTAINER" ] || return 0
+  docker stop --time 10 "$ACTIVE_CONTAINER" >/dev/null 2>&1 || true
+  if ! docker rm -f "$ACTIVE_CONTAINER" >/dev/null 2>&1; then
+    if docker container inspect "$ACTIVE_CONTAINER" >/dev/null 2>&1 \
+      || ! docker info >/dev/null 2>&1; then
+      echo "error: could not confirm removal of container $ACTIVE_CONTAINER" >&2
+    fi
+  fi
+  ACTIVE_CONTAINER=""
+}
+
+cancel_run() {
+  local status="$1"
+  trap '' INT TERM
+  if [ -n "${log_fd:-}" ]; then
+    exec {log_fd}>&-
+  fi
+  cleanup_container
+  for child in "$DOCKER_PID" "$LOGGER_PID"; do
+    [ -n "$child" ] || continue
+    kill -TERM "$child" >/dev/null 2>&1 || true
+    wait "$child" 2>/dev/null || true
+  done
+  exit "$status"
+}
+
+trap 'cancel_run 130' INT
+trap 'cancel_run 143' TERM
+
 for project in "${projects[@]}"; do
   [ -n "$project" ] || continue
   if [ -z "$resume_dir" ] && grep -qxF "$project" "$DOXIS_DIR/state"; then
@@ -153,19 +187,24 @@ for project in "${projects[@]}"; do
   docker_args+=("${EXTRA_DOCKER_ARGS[@]}")
   docker_args+=("$IMAGE")
 
-  trap 'docker stop "$CONTAINER_NAME" >/dev/null 2>&1 || true; exit 130' INT TERM
-  
+  ACTIVE_CONTAINER="$CONTAINER_NAME"
   if [ -n "$resume_dir" ]; then
     echo "== $(date '+%F %T') resume run: $project -> $project_dir ==" >> "$project_dir/pipeline.log"
-    set +e
-    docker run "${docker_args[@]}" 2>&1 | awk '{ print strftime("%Y-%m-%d %H:%M:%S"), $0; fflush() }' >> "$project_dir/pipeline.log"
-    rc=${PIPESTATUS[0]}
   else
-    set +e
-    docker run "${docker_args[@]}" 2>&1 | awk '{ print strftime("%Y-%m-%d %H:%M:%S"), $0; fflush() }' > "$project_dir/pipeline.log"
-    rc=${PIPESTATUS[0]}
+    : > "$project_dir/pipeline.log"
   fi
-  set -e
+  exec {log_fd}> >(awk '{ print strftime("%Y-%m-%d %H:%M:%S"), $0; fflush() }' >> "$project_dir/pipeline.log")
+  LOGGER_PID=$!
+  docker run "${docker_args[@]}" >&"$log_fd" 2>&1 &
+  DOCKER_PID=$!
+  exec {log_fd}>&-
+  unset log_fd
+  rc=0
+  wait "$DOCKER_PID" || rc=$?
+  wait "$LOGGER_PID" || true
+  ACTIVE_CONTAINER=""
+  DOCKER_PID=""
+  LOGGER_PID=""
 
   echo "  container exit: $rc"
   if [ "$rc" -ne 0 ]; then
