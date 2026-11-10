@@ -29,6 +29,7 @@ Or
 
 ```bash
 amixis doxis run build-image projects
+amixis doxis build-image run projects
 ```
 
 The default model is `opencode/big-pickle`. To choose a model and provide an
@@ -189,9 +190,22 @@ Bare `amixis doxis` prints usage. Use `amixis doxis run --help` or
 | `amixis doxis build-image [--image TAG]` | Build only; accepts `--image` and help |
 | `amixis doxis run <list-file> [options]` | Run using an existing image |
 | `amixis doxis run build-image <list-file> [options]` | Build, then run |
+| `amixis doxis build-image run <list-file> [options]` | Build, then run |
 | `amixis doxis run --resume PATH [options]` | Continue an existing workspace |
 
-Options for `amixis doxis run`:
+`run` and `build-image` are peer actions. When both are selected, the image is
+always built before the pipeline runs. Each action may appear once, and all
+actions must precede the list file. Options may appear between or after actions:
+
+```bash
+amixis doxis build-image --image my-tag run projects --limit 2
+amixis doxis run build-image --resume ./doxis-workspaces/example_1
+```
+
+Build-only commands accept `--image` and help. The other options require `run`.
+Repeated `--image` uses the last value; repeated `--extra-docker` adds arguments.
+
+Options for commands containing `run`:
 
 | Option | Meaning |
 | --- | --- |

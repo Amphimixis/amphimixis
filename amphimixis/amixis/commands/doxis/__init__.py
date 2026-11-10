@@ -8,6 +8,75 @@ from amphimixis.amixis.commands.doxis.run import _run_pipeline
 HELP_MESSAGE = "Run dockerized amphimixis (doxis)"
 _BUILD_IMAGE_SUBCMD = "build-image"
 _RUN_SUBCMD = "run"
+_RUN_OPTIONS = (
+    "limit",
+    "skip",
+    "repo",
+    "config",
+    "model",
+    "prompt",
+    "workdir",
+    "resume",
+    "extra_docker",
+)
+
+__all__ = ["HELP_MESSAGE", "add_args", "run_doxis"]
+
+
+class _ActionParser(ArgumentParser):
+    """Parse peer actions and options, including options between actions."""
+
+    _parsing_intermixed = False
+
+    def parse_known_args(self, args=None, namespace=None):
+        """Normalize Doxis actions after parsing intermixed options."""
+        if self._parsing_intermixed:
+            return super().parse_known_args(args, namespace)
+        self._parsing_intermixed = True
+        try:
+            parsed, unknown = self.parse_known_intermixed_args(args, namespace)
+        finally:
+            self._parsing_intermixed = False
+        self._normalize_actions(parsed)
+        return parsed, unknown
+
+    def _normalize_actions(self, args: Namespace) -> None:
+        """Validate action order and separate the list file from actions."""
+        actions, operands = self._parse_actions(args)
+        args.build_image = _BUILD_IMAGE_SUBCMD in actions
+        args.run_pipeline = _RUN_SUBCMD in actions
+        args.list_file = operands[0] if operands else None
+        if not args.run_pipeline:
+            self._validate_build_only(args)
+        del args.operands
+
+    def _parse_actions(self, args: Namespace) -> tuple[set[str], list[str]]:
+        """Extract the action group and reject misplaced or repeated actions."""
+        actions = {args.doxis_subcommand}
+        operands = list(args.operands)
+        if operands and operands[0] in (_RUN_SUBCMD, _BUILD_IMAGE_SUBCMD):
+            action = operands.pop(0)
+            if action in actions:
+                self.error(f"duplicate action: {action}")
+            actions.add(action)
+        if len(operands) > 1 or any(
+            operand in (_RUN_SUBCMD, _BUILD_IMAGE_SUBCMD) for operand in operands
+        ):
+            self.error("actions must appear once before a single list file")
+        return actions, operands
+
+    def _validate_build_only(self, args: Namespace) -> None:
+        """Reject run inputs when only the image build action is selected."""
+        if args.list_file is not None:
+            self.error("a list file requires the run action")
+        supplied = [
+            name
+            for name in _RUN_OPTIONS
+            if getattr(args, name) is not None
+            and (name != "extra_docker" or args.extra_docker)
+        ]
+        if supplied:
+            self.error("run options require the run action: " + ", ".join(supplied))
 
 
 def add_args(parser: ArgumentParser) -> None:
@@ -15,45 +84,35 @@ def add_args(parser: ArgumentParser) -> None:
 
     :param ArgumentParser parser: subcommand parser to which arguments are added
     """
-    subparsers = parser.add_subparsers(dest="doxis_subcommand", title="Doxis options")
+    subparsers = parser.add_subparsers(
+        dest="doxis_subcommand", title="Doxis actions", parser_class=_ActionParser
+    )
     subparsers.required = False
 
-    run_parser = subparsers.add_parser(
-        _RUN_SUBCMD,
-        help="run the pipeline over the project list (does not build the image)",
-    )
-    _add_run_args(run_parser)
-
-    build_image_parser = subparsers.add_parser(
-        _BUILD_IMAGE_SUBCMD,
-        help="build the doxis Docker image",
-    )
-    _add_build_image_args(build_image_parser)
+    for action, description in (
+        (_RUN_SUBCMD, "run the pipeline; combine with build-image to build first"),
+        (_BUILD_IMAGE_SUBCMD, "build the image; combine with run to run afterward"),
+    ):
+        action_parser = subparsers.add_parser(
+            action,
+            help=description,
+            description="Select either action or both in either order before the list "
+            "file. Combined actions always build before running. "
+            "Options other than --image require run. A list file is required "
+            "for run unless --resume is supplied.",
+        )
+        action_parser.set_defaults(doxis_subcommand=action)
+        _add_run_args(action_parser)
 
 
 def _add_run_args(parser: ArgumentParser) -> None:
-    """Add arguments for ``amixis doxis run``.
-
-    The first positional is either the list file or the ``build-image``
-    token.
-
-    :param ArgumentParser parser: subcommand parser to which arguments are added
-    """
+    """Add shared options and positional operands for either first action."""
     parser.add_argument(
-        "target",
-        nargs="?",
-        default=None,
-        metavar="build-image",
-        help="'build-image' to build the image before running (list file "
-        "comes second)",
-    )
-    parser.add_argument(
-        "list_file",
-        nargs="?",
-        default=None,
-        metavar="list_file",
-        help="file listing project names, one per line "
-        "(required unless resuming; comes second after 'build-image')",
+        "operands",
+        nargs="*",
+        metavar="ACTION_OR_LIST",
+        help="optional other action (run or build-image), followed by a list file; "
+        "actions may appear once in either order",
     )
     parser.add_argument(
         "--limit",
@@ -131,20 +190,6 @@ def _add_run_args(parser: ArgumentParser) -> None:
     )
 
 
-def _add_build_image_args(parser: ArgumentParser) -> None:
-    """Add arguments for ``amixis doxis build-image``.
-
-    :param ArgumentParser parser: subcommand parser to which arguments are added
-    """
-    parser.add_argument(
-        "--image",
-        type=str,
-        default=None,
-        metavar="TAG",
-        help="Docker image tag (default: amphimixis-opencode:latest)",
-    )
-
-
 def _print_help() -> None:
     """Print help for the doxis command."""
     helper = ArgumentParser(prog="amixis doxis")
@@ -162,9 +207,9 @@ def run_doxis(args: Namespace) -> bool:
     :rtype: bool
     """
     subcommand = getattr(args, "doxis_subcommand", None)
-    if subcommand == _BUILD_IMAGE_SUBCMD:
-        return _run_build_image(args)
-    if subcommand != _RUN_SUBCMD:
+    if subcommand is None:
         _print_help()
         return True
-    return _run_pipeline(args)
+    if args.run_pipeline:
+        return _run_pipeline(args, build_image=args.build_image)
+    return _run_build_image(args)

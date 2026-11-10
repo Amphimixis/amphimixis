@@ -9,7 +9,6 @@ from amphimixis.amixis.commands.doxis._utils import (
 )
 
 _REBUILD_SCRIPT_NAME = "build-and-run.sh"
-_BUILD_IMAGE_SUBCMD = "build-image"
 
 
 def _translate_run_args(args: Namespace, list_file: str | None) -> list[str]:
@@ -44,20 +43,15 @@ def _translate_run_args(args: Namespace, list_file: str | None) -> list[str]:
     return script_args
 
 
-def _run_pipeline(args: Namespace) -> bool:
+def _run_pipeline(args: Namespace, *, build_image: bool) -> bool:
     """Run the doxis pipeline, optionally building the image first.
 
     :param Namespace args: parsed command line arguments
+    :param bool build_image: whether to build the image before running
     :return: True if the pipeline succeeded, False otherwise
     :rtype: bool
     """
-    if args.target == _BUILD_IMAGE_SUBCMD:
-        do_build, list_file = True, args.list_file
-    elif args.list_file is not None:
-        print(f"error: unexpected argument: {args.list_file}")
-        return False
-    else:
-        do_build, list_file = False, args.target
+    list_file = args.list_file
     if getattr(args, "resume", None):
         if not _validate_resume_args(args, list_file):
             return False
@@ -72,7 +66,7 @@ def _run_pipeline(args: Namespace) -> bool:
         print(f"error: missing doxis script {_REBUILD_SCRIPT_NAME}")
         return False
     script_args = _translate_run_args(args, list_file)
-    if not do_build:
+    if not build_image:
         script_args = ["--no-build", *script_args]
     return _launch(script, script_args, env)
 

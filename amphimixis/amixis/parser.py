@@ -74,6 +74,7 @@ Examples:
       → Runs the doxis pipeline over the list (does not build the image).
 
   amixis doxis run build-image <list-file>
+  amixis doxis build-image run <list-file>
       → Builds the image and runs the pipeline over the list.
 """
 
@@ -149,6 +150,7 @@ EXAMPLES = {
   amixis doxis run <list-file>
       → Run pipeline over the project list (does not build the image)
   amixis doxis run build-image <list-file>
+  amixis doxis build-image run <list-file>
       → Build the image and run the pipeline over the project list
   amixis doxis run <list-file> --limit 1 --model opencode/big-pickle
       → Run for the first project with a custom model

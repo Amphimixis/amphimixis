@@ -46,6 +46,8 @@ def _main() -> bool:
     """
     parser = create_parser()
     args, extra_args = parser.parse_known_args()
+    if args.command == "doxis" and extra_args:
+        parser.error("unrecognized arguments: " + " ".join(extra_args))
 
     if args.short_help:
         print_help(COMMANDS, False)

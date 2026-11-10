@@ -6,6 +6,7 @@ from typing import Any
 
 import pytest
 
+from amphimixis.amixis.__main__ import _main
 from amphimixis.amixis.commands import COMMANDS
 from amphimixis.amixis.commands import doxis as doxis_cmd
 from amphimixis.amixis.commands.doxis import _utils as doxis_utils
@@ -16,7 +17,8 @@ from amphimixis.amixis.parser import create_parser
 def _run_args(**overrides: Any) -> Namespace:
     base: dict[str, Any] = {
         "doxis_subcommand": "run",
-        "target": None,
+        "build_image": False,
+        "run_pipeline": True,
         "list_file": None,
         "limit": None,
         "skip": None,
@@ -36,7 +38,8 @@ def _run_args(**overrides: Any) -> Namespace:
 def _build_image_args(**overrides: Any) -> Namespace:
     base: dict[str, Any] = {
         "doxis_subcommand": "build-image",
-        "target": None,
+        "build_image": True,
+        "run_pipeline": False,
         "list_file": None,
         "limit": None,
         "skip": None,
@@ -75,19 +78,23 @@ class TestDoxisArgs:
         args = create_parser().parse_args(["doxis", "run", "projects"])
         assert args.command == "doxis"
         assert args.doxis_subcommand == "run"
-        assert args.target == "projects"
-        assert args.list_file is None
+        assert args.list_file == "projects"
+        assert args.build_image is False
+        assert args.run_pipeline is True
         assert args.limit is None
         assert args.skip is None
         assert args.prompt is None
         assert args.extra_docker == []
         assert args.image is None
 
-    def test_run_parser_all_flags(self):
+    @pytest.mark.parametrize(
+        "actions", [["run"], ["run", "build-image"], ["build-image", "run"]]
+    )
+    def test_run_parser_all_flags(self, actions):
         args = create_parser().parse_args(
             [
                 "doxis",
-                "run",
+                *actions,
                 "projects",
                 "--limit",
                 "2",
@@ -139,7 +146,8 @@ class TestDoxisArgs:
             ["doxis", "run", "build-image", "projects", "--limit", "2"]
         )
         assert args.doxis_subcommand == "run"
-        assert args.target == "build-image"
+        assert args.build_image is True
+        assert args.run_pipeline is True
         assert args.list_file == "projects"
         assert args.limit == 2
 
@@ -207,8 +215,10 @@ class TestDoxisArgs:
 
 @pytest.mark.unit
 class TestRunDoxis:
-    @pytest.mark.parametrize("build", [False, True])
-    def test_resume_launches_without_list(self, mocker, build):
+    @pytest.mark.parametrize(
+        "actions", [["run"], ["run", "build-image"], ["build-image", "run"]]
+    )
+    def test_resume_launches_without_list(self, mocker, actions):
         mocker.patch(
             "amphimixis.amixis.commands.doxis.run._resolve_doxis_script",
             return_value=Path("build-and-run.sh"),
@@ -219,14 +229,16 @@ class TestRunDoxis:
         args = create_parser().parse_args(
             [
                 "doxis",
-                "run",
-                *(["build-image"] if build else []),
+                *actions,
                 "--resume",
                 "existing",
             ]
         )
         assert doxis_cmd.run_doxis(args) is True
-        expected = ([] if build else ["--no-build"]) + ["--resume", "existing"]
+        expected = ([] if "build-image" in actions else ["--no-build"]) + [
+            "--resume",
+            "existing",
+        ]
         assert launch.call_args.args[1] == expected
 
     @pytest.mark.parametrize(
@@ -244,10 +256,11 @@ class TestRunDoxis:
         assert doxis_cmd.run_doxis(_run_args()) is False
 
     def test_run_build_image_without_list_fails(self):
-        assert doxis_cmd.run_doxis(_run_args(target="build-image")) is False
+        assert doxis_cmd.run_doxis(_run_args(build_image=True)) is False
 
     def test_unexpected_extra_positional(self):
-        assert doxis_cmd.run_doxis(_run_args(target="a", list_file="b")) is False
+        with pytest.raises(SystemExit):
+            create_parser().parse_args(["doxis", "run", "a", "b"])
 
     def test_run_without_build_adds_no_build(self, mocker, tmp_path):
         list_file = tmp_path / "projects"
@@ -261,7 +274,7 @@ class TestRunDoxis:
         launch_mock = mocker.patch(
             "amphimixis.amixis.commands.doxis.run._launch", return_value=True
         )
-        args = _run_args(target=str(list_file), image="my-tag", limit=1)
+        args = _run_args(list_file=str(list_file), image="my-tag", limit=1)
         assert doxis_cmd.run_doxis(args) is True
         (script, script_args, env), _ = launch_mock.call_args
         assert script == rebuild
@@ -284,7 +297,7 @@ class TestRunDoxis:
         launch_mock = mocker.patch(
             "amphimixis.amixis.commands.doxis.run._launch", return_value=True
         )
-        args = _run_args(target="build-image", list_file=str(list_file))
+        args = _run_args(build_image=True, list_file=str(list_file))
         assert doxis_cmd.run_doxis(args) is True
         (script, script_args, _env), _ = launch_mock.call_args
         assert script == rebuild
@@ -292,8 +305,11 @@ class TestRunDoxis:
         assert "--no-build" not in script_args
         assert "--no-run" not in script_args
 
+    @pytest.mark.parametrize(
+        "actions", [["run", "build-image"], ["build-image", "run"]]
+    )
     def test_run_parser_build_image_form_launches_without_no_build(
-        self, mocker, tmp_path
+        self, mocker, tmp_path, actions
     ):
         list_file = tmp_path / "projects"
         list_file.write_text("util-linux\n")
@@ -309,8 +325,7 @@ class TestRunDoxis:
         args = create_parser().parse_args(
             [
                 "doxis",
-                "run",
-                "build-image",
+                *actions,
                 str(list_file),
                 "--limit",
                 "2",
@@ -356,7 +371,7 @@ class TestRunDoxis:
             "amphimixis.amixis.commands.doxis.run._resolve_doxis_script",
             return_value=None,
         )
-        assert doxis_cmd.run_doxis(_run_args(target=str(list_file))) is False
+        assert doxis_cmd.run_doxis(_run_args(list_file=str(list_file))) is False
 
     def test_nonzero_rc_is_failure(self, mocker, tmp_path):
         list_file = tmp_path / "projects"
@@ -368,7 +383,7 @@ class TestRunDoxis:
             return_value=rebuild,
         )
         mocker.patch("amphimixis.amixis.commands.doxis.run._launch", return_value=False)
-        assert doxis_cmd.run_doxis(_run_args(target=str(list_file))) is False
+        assert doxis_cmd.run_doxis(_run_args(list_file=str(list_file))) is False
 
     def test_launch_failure_is_failure(self, mocker, tmp_path):
         rebuild = tmp_path / "build-and-run.sh"
@@ -646,3 +661,114 @@ def test_entrypoint_prompt_recovers_history_only_on_resume(
     else:
         assert "Do not read pipeline.log" in prompt
         assert "Clone exactly" in prompt
+
+
+@pytest.mark.unit
+class TestComposedDoxisActions:
+    @pytest.mark.parametrize(
+        "actions", [["run", "build-image"], ["build-image", "run"]]
+    )
+    def test_options_between_actions(self, actions):
+        args = create_parser().parse_args(
+            [
+                "doxis",
+                actions[0],
+                "--image",
+                "first",
+                "--prompt",
+                "run",
+                "--extra-docker=--privileged",
+                actions[1],
+                "--image",
+                "last",
+                "--extra-docker=--network=host",
+                "projects",
+                "--limit",
+                "0",
+            ]
+        )
+        assert args.build_image and args.run_pipeline
+        assert args.list_file == "projects"
+        assert args.image == "last"
+        assert args.prompt == "run"
+        assert args.limit == 0
+        assert args.extra_docker == ["--privileged", "--network=host"]
+
+    @pytest.mark.parametrize(
+        "tokens",
+        [
+            ["run", "run", "projects"],
+            ["build-image", "build-image"],
+            ["run", "projects", "build-image"],
+            ["build-image", "projects", "run"],
+            ["run", "build-image", "run", "projects"],
+            ["run", "build-image", "a", "b"],
+            ["build-image", "projects"],
+            ["build-image", "--limit", "0"],
+            ["build-image", "--skip", "0"],
+            ["build-image", "--prompt", ""],
+            ["build-image", "--extra-docker=--privileged"],
+            ["build-image", "--resume", "existing"],
+        ],
+    )
+    def test_invalid_selections(self, tokens):
+        with pytest.raises(SystemExit):
+            create_parser().parse_args(["doxis", *tokens])
+
+    @pytest.mark.parametrize(
+        "actions", [["run"], ["run", "build-image"], ["build-image", "run"]]
+    )
+    def test_missing_list_does_not_launch(self, mocker, actions):
+        launch = mocker.patch("amphimixis.amixis.commands.doxis.run._launch")
+        args = create_parser().parse_args(["doxis", *actions])
+        assert doxis_cmd.run_doxis(args) is False
+        launch.assert_not_called()
+
+    @pytest.mark.parametrize(
+        "actions", [["run", "build-image"], ["build-image", "run"]]
+    )
+    @pytest.mark.parametrize(
+        "selection", [["projects"], ["--limit", "0"], ["--skip", "0"]]
+    )
+    def test_combined_resume_rejects_selection(self, mocker, actions, selection):
+        launch = mocker.patch("amphimixis.amixis.commands.doxis.run._launch")
+        args = create_parser().parse_args(
+            ["doxis", *actions, *selection, "--resume", "existing"]
+        )
+        assert doxis_cmd.run_doxis(args) is False
+        launch.assert_not_called()
+
+    @pytest.mark.parametrize(
+        "actions", [["run", "build-image"], ["build-image", "run"]]
+    )
+    def test_combined_failure_propagates(self, mocker, actions):
+        mocker.patch(
+            "amphimixis.amixis.commands.doxis.run._resolve_doxis_script",
+            return_value=Path("build-and-run.sh"),
+        )
+        mocker.patch("amphimixis.amixis.commands.doxis.run._launch", return_value=False)
+        args = create_parser().parse_args(["doxis", *actions, "projects"])
+        assert doxis_cmd.run_doxis(args) is False
+
+    @pytest.mark.parametrize(
+        "tokens", [["run", "projects", "--unknown"], ["build-image", "--unknown"]]
+    )
+    def test_entrypoint_rejects_unknown_options(self, mocker, tokens):
+        mocker.patch("sys.argv", ["amixis", "doxis", *tokens])
+        launch = mocker.patch.object(doxis_cmd, "run_doxis")
+        with pytest.raises(SystemExit) as error:
+            _main()
+        assert error.value.code == 2
+        launch.assert_not_called()
+
+    @pytest.mark.parametrize(
+        "actions",
+        [[], ["run"], ["build-image"], ["run", "build-image"], ["build-image", "run"]],
+    )
+    def test_help_does_not_launch(self, mocker, actions, capsys):
+        launch = mocker.patch.object(doxis_cmd, "run_doxis")
+        with pytest.raises(SystemExit) as error:
+            create_parser().parse_args(["doxis", *actions, "--help"])
+        assert error.value.code == 0
+        assert "usage:" in capsys.readouterr().out
+        launch.assert_not_called()
