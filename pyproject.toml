@@ -25,10 +25,26 @@ dependencies = [
 include-package-data = true
 
 [tool.setuptools.packages.find]
+namespaces = false
 include = ["amphimixis*"]
 
 [tool.setuptools.package-data]
-"amphimixis" = ["samples/*.yml", "../amphimixis-integrations/**/*.ts", "../amphimixis-integrations/**/*.md"]
+"amphimixis" = [
+    "samples/*.yml",
+    "../amphimixis-integrations/opencode/**/*.ts",
+    "../amphimixis-integrations/inspector_general/*.ts",
+    "../amphimixis-integrations/*.md",
+    "../amphimixis-integrations/opencode/agents/*.md",
+    "../amphimixis-integrations/opencode/*.md",
+    "../amphimixis-integrations/doxis/*",
+    "../amphimixis-integrations/doxis/**/*",
+]
+
+[tool.setuptools.exclude-package-data]
+"amphimixis" = [
+    "../amphimixis-integrations/doxis/work/*",
+    "../amphimixis-integrations/doxis/work/**/*",
+]
 
 [dependency-groups]
 dev = [
