@@ -26,6 +26,7 @@ amixis doxis run projects
 ```
 
 Or
+
 ```bash
 amixis doxis run build-image projects
 ```
@@ -160,7 +161,7 @@ the project name and model, unless
 `--model` is supplied. Re-supply any needed `--config`, image selection, Docker
 arguments, or additional prompt. Missing files or startup metadata cause an error
 before a container starts or the log changes. With an explicit rebuild, image
-building happens before this workspace validation. 
+building happens before this workspace validation.
 
 Do not combine `--resume` with a list file, `--skip`, `--limit`, or `--workdir`.
 
@@ -268,9 +269,3 @@ AMPHIMIXIS_IMAGE=my-amphimixis:latest \
 The entrypoint attempts to set `perf_event_paranoid=-1`, but continues if that
 setting is not writable. A running container alone does not guarantee that
 profiling permissions are available.
-
-Runs use the container name `amphimixis-worker` by default, and remove any
-existing container with that name before starting each project. For simultaneous
-invocations, set a distinct `AMPHIMIXIS_CONTAINER_NAME` for each invocation and
-use separate workspace parents and non-overlapping projects. The `state` file
-remains shared and has no concurrency locking.
