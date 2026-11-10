@@ -36,7 +36,14 @@ include = ["amphimixis*"]
     "../amphimixis-integrations/*.md",
     "../amphimixis-integrations/opencode/agents/*.md",
     "../amphimixis-integrations/opencode/*.md",
-    "../amphimixis-integrations/doxis/*.md",
+    "../amphimixis-integrations/doxis/*",
+    "../amphimixis-integrations/doxis/**/*",
+]
+
+[tool.setuptools.exclude-package-data]
+"amphimixis" = [
+    "../amphimixis-integrations/doxis/work/*",
+    "../amphimixis-integrations/doxis/work/**/*",
 ]
 
 [dependency-groups]
