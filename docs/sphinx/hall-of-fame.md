@@ -10,5 +10,7 @@ help and submitted to upstream maintainers.
 | **libtommath**<br>[RISC-V support for `TIMFUNC`](https://github.com/libtom/libtommath/pull/615) | The demo timing macro lacked 64-bit RISC-V support. | Benchmarks can use `TIMFUNC` on RISC-V architecture. | ○ Open | {doc}`Read report <libtommath-report>` |
 | **cJSON**<br>[Fix `__GNUCC__` typo](https://github.com/DaveGamble/cJSON/pull/1096) | `cJSON_Utils.c` checked `__GNUCC__` instead of `__GNUC__`. | Corrects the compiler check for visibility pragmas. | ○ Open | {doc}`Read report <cJSON-report>` |
 
+All project reports are available in [`docs/reports`](https://github.com/Amphimixis/amphimixis/tree/main/docs/reports).
+
 PR states are shown as of November 2026 and may change. See each pull request
 for its discussion, checks, and current status.
