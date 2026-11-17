@@ -12,6 +12,7 @@ Home Page
 .. button-ref:: hall-of-fame
    :color: primary
    :expand:
+   :class: sd-font-weight-bold
 
    >> Hall of Fame <<
 

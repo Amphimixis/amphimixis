@@ -1,4 +1,4 @@
-# Amphimixis in Open Source
+# Hall of Fame
 
 Amphimixis helps uncover performance opportunities, portability gaps, and
 correctness issues in real-world projects. These patches were found with its
