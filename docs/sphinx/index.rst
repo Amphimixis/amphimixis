@@ -98,6 +98,7 @@ Quick Start
    usage_examples
    migration_readiness_methodology
    report-template
+   hall-of-fame
 
 .. toctree::
    :maxdepth: 2
