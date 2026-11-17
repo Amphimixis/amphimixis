@@ -9,6 +9,13 @@ Home Page
    Amphimixis uses ``perf`` for profiling and produces a cross-table with two
    builds per CPU event for comparison.
 
+.. button-ref:: hall-of-fame
+   :color: primary
+   :expand:
+   :class: sd-font-weight-bold
+
+   >> Hall of Fame <<
+
 Features
 --------
 
@@ -98,6 +105,7 @@ Quick Start
    usage_examples
    migration_readiness_methodology
    report-template
+   hall-of-fame
 
 .. toctree::
    :maxdepth: 2
