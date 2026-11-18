@@ -30,16 +30,17 @@ builds: [{}]
 
 The **platforms** section describes the machines on which the project will be built and run.
 
-|        Field         |   Type    | Description                                                            |
-| :------------------: | :-------: | :--------------------------------------------------------------------- |
-|          id          |  string   | Unique id of the platform                                              |
-|         arch         |  string   | Architecture (e.g. x86, riscv)                                         |
-|        address       |  string   | (**Optional**) IP address or domain name                               |
-|       username       |  string   | (**Optional**) Username of the remote machine                          |
-|       port[^3]       |  integer  | (**Optional**) Port of the remote machine                              |
-|     password[^4]     |  string   | (**Optional**) Password for the remote machine                         |
+|                   Field                   |      Type       | Description                                    |
+| :---------------------------------------: | :-------------: | :----------------------------------------------|
+|                    id                     |     integer     | Unique id of the platform                      |
+|                   arch                    |     string      | Architecture (e.g. x86, riscv)                 |
+|                  address                  |     string      | (**Optional**) IP address or domain name       |
+|                 username                  |     string      | (**Optional**) Username of the remote machine  |
+|                 port[^3]                  |     integer     | (**Optional**) Port of the remote machine      |
+|                password[^4]               |     string      | (**Optional**) Password for the remote machine |
+|                   qemu                    | boolean or dict | (**Optional**) Provision a local QEMU VM       |
 
----
+See the [Configuration Qemu Guide](./config_qemu.md).
 
 > **Note:**
 >
@@ -110,6 +111,8 @@ builds:
 [^2]: `Make` and `Ninja` are supported as runners (low-level build system). If not specified, it is automatically selected from the supported runners of the selected build system.
 
 [^3]: Default value: 22. The `port` must be within the range 1-65535.
+For QEMU platforms it is the host port forwarded to the guest SSH port;
+if the configured port is busy or omitted, a free port is chosen automatically.
 
 [^4]: If the user uses SSH keys, start `ssh-agent` in the current shell and add the required keys for each remote machine manually with `ssh-add` before running Amphimixis. In this case, the password does not need to be provided. **Please note that passwords are passed to SSH through sshpass, which is not secure.**
 

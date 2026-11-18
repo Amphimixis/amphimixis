@@ -8,6 +8,7 @@ information.
 import glob
 import os
 import pickle
+import socket
 from pathlib import Path
 
 from amphimixis.core.general.constants import PERF_STATS_EXT
@@ -162,3 +163,31 @@ def get_unique_path(base_path: Path) -> Path:
         if not new_path.exists():
             return new_path
         counter += 1
+
+
+def is_port_free(port: int, host: str = "127.0.0.1") -> bool:
+    """Check whether a TCP port is free to bind on the given host.
+
+    :param int port: Port to check.
+    :param str host: Host interface to test binding on.
+    :return: True if the port can be bound.
+    :rtype: bool
+    """
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        try:
+            sock.bind((host, port))
+        except OSError:
+            return False
+    return True
+
+
+def find_free_port(host: str = "127.0.0.1") -> int:
+    """Return a currently free ephemeral TCP port on the given host.
+
+    :param str host: Host interface to bind on.
+    :return: A free port number assigned by the OS.
+    :rtype: int
+    """
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.bind((host, 0))
+        return int(sock.getsockname()[1])
