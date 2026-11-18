@@ -66,6 +66,16 @@ Examples:
 
   amixis clean --all
       → Cleans all build directories.
+
+  amixis doxis build-image
+      → Builds the doxis Docker image.
+
+  amixis doxis run <list-file>
+      → Runs the doxis pipeline over the list (does not build the image).
+
+  amixis doxis run build-image <list-file>
+  amixis doxis build-image run <list-file>
+      → Builds the image and runs the pipeline over the list.
 """
 
 EXAMPLES = {
@@ -130,6 +140,29 @@ EXAMPLES = {
       → Interactively create input.yml configuration file
   amixis add toolchain
       → Interactively add a toolchain to global config""",
+    "doxis": """Examples:
+  amixis doxis
+      → Show doxis usage
+  amixis doxis build-image
+      → Build the doxis Docker image
+  amixis doxis build-image --image my-tag
+      → Build the image with a custom tag
+  amixis doxis run <list-file>
+      → Run pipeline over the project list (does not build the image)
+  amixis doxis run build-image <list-file>
+  amixis doxis build-image run <list-file>
+      → Build the image and run the pipeline over the project list
+  amixis doxis run <list-file> --limit 1 --model opencode/big-pickle
+      → Run for the first project with a custom model
+  amixis doxis run <list-file> --skip 2 --config my-opencode.json
+      → Skip first 2 projects, use custom opencode config
+  amixis doxis run <list-file> --repo https://github.com/x/y
+      → Clone exactly this repository URL in the container
+      (passes repo url in all future launched containers)
+  amixis doxis run <list-file> --workdir /path/to/workspaces
+      → Create new numbered project directories under this parent
+  amixis doxis run --resume doxis/work/<project>_1
+      → Recover project and model from pipeline.log and continue work""",
     "opencode": """Examples:
   amixis opencode install
       → Install Amphimixis agents, tools, and plugin into local .opencode/

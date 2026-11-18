@@ -201,26 +201,33 @@ ssh -o StrictHostKeyChecking=no -p <port> <username>@<address> uname -m
 ```
 The output must match the platform `arch`. If it does not match or the connection fails, DO NOT write the platform — report the issue to the orchestrator.
 
-**IMPORTANT**: If the target platform uses qemu-user mode emulation (not full system emulation), the emulator command MUST be prepended to each executable in the `executables` field of the build entry.
+**IMPORTANT**: If the target platform runs under qemu-user emulation (user-mode emulation, not full system emulation), the build MUST be configured as follows:
+1. Build machine: MUST be the local platform (no address) whose arch matches the architecture of the current machine. Check it with uname -m and map the output to one of the allowed arch values: x86, riscv, arm. The host architecture may differ from the target architecture — that is expected, because the executables will run under QEMU emulation.
+2. Recipe: MUST specify the cross-toolchain for the target architecture through `config_flags`, using absolute paths to the target compilers, e.g. -DCMAKE_C_COMPILER=/usr/bin/riscv64-linux-gnu-gcc -DCMAKE_CXX_COMPILER=/usr/bin/riscv64-linux-gnu-g++. Or you can specify `toolchain` block, for this you must declare `name` key. Do NOT use relative compiler names.
+3. Run machine: MUST be the platform with arch equal to the host architecture. This platform is local (no address) and runs the executables under QEMU user-mode emulation.
+4. Executables: List the built executables in the executables field as plain paths relative to the build directory (e.g., bin/my_app). Do NOT prepend an emulator prefix. The correct QEMU emulator is selected automatically from the ELF header (magic number / e_machine field) of each executable.
 
-Example for RISC-V user-mode emulation:
+Example for RISC-V user-mode emulation on an x86 host:
 ```yaml
+platforms:
+  - id: 1
+    arch: x86      # local build machine, matches the host (uname -m)
+recipes:
+  - id: 2
+    config_flags: -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBUILD_TESTING=ON -DCMAKE_EXE_LINKER_FLAGS=-static -DCMAKE_C_COMPILER=/usr/bin/riscv64-linux-gnu-gcc -DCMAKE_CXX_COMPILER=/usr/bin/riscv64-linux-gnu-g++
+    compiler_flags:
+      c_flags: -O3 -g
+      cxx_flags: -O3 -g
 builds:
   - build_machine: 1
-    run_machine: 2
+    run_machine: 1
     recipe_id: 2
     executables:
-      - qemu-riscv64 bin/my_app
-      - qemu-riscv64 tests/test_benchmark
+      - bin/my_app
+      - tests/test_benchmark
 ```
 
-The platform entry for qemu-user does NOT need an `address` field (it runs locally on the build machine).
-
-Common qemu-user prefixes:
-- RISC-V 64-bit: `qemu-riscv64`
-- RISC-V 32-bit: `qemu-riscv32`
-- ARM 64-bit: `qemu-aarch64`
-- ARM 32-bit: `qemu-arm`
+   The platform entry for qemu-user does NOT need an `address` field (it runs locally on the build machine).
 
 ## Configuration Workflow Summary
 
