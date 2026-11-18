@@ -59,11 +59,11 @@ If a URL was provided, use it directly. Otherwise, use `websearch` to find the p
 
 ### 1b. Clone the repository
 
-Use `git clone <url> <workspace_path>/<project-name>` to download the repository to the workspace directory. The workspace path is `{current working directory}/<project name>-workspace/`.
+Use `git clone <url> <workspace_path>/<project-name>` to download the repository, to the workspace directory. The workspace path is `{current working directory}/<project name>-workspace/`. If the project has a `.gitmodules` file, navigate to a repository folder and initialize submodules using the `cd <workspace_path>/<project-name> && git submodule update --init --recursive` command. If submodules cannot be fetched, record it as a build dependency limitation in the report instead of failing silently.
 
 IMPORTANT: Clone ONLY the project repository. Nothing else.
 
-**Self-check**: Verify the clone succeeded by listing the target directory with `ls`.
+**Self-check**: Verify the clone succeeded by listing the target directory with `ls`. If the project has a `.gitmodules` file, verify that the paths listed in `.gitmodules` are non-empty.
 
 ### 1c. Check latest activity
 
