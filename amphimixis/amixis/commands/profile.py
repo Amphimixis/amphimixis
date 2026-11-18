@@ -113,7 +113,9 @@ def run_profile(
         if not build.successfully_built:
             continue
         profiler_ = Profiler(project, build, ui)
-        successful_execs = profiler_.profile_all(events=events)
+        successful_execs = profiler_.profile_all(
+            events=events if events is not None else build.run_machine.events
+        )
         profiler_.save_stats(stats_file_format=stats_format)
         profiler_.cleanup()
         if not successful_execs or (

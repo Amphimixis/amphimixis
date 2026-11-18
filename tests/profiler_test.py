@@ -45,8 +45,8 @@ def get_profiler(mocker: pytest_mock.MockerFixture, monkeypatch: pytest.MonkeyPa
         workdir_path_mock.return_value = str(path)
         mocker.patch("amphimixis.core.Shell.get_project_workdir", workdir_path_mock)
         build = general.Build(
-            general.MachineInfo(general.Arch.X86, None, None),
-            general.MachineInfo(general.Arch.X86, None, None),
+            general.MachineInfo(general.Arch.X86, None, None, None),
+            general.MachineInfo(general.Arch.X86, None, None, None),
             "test_build",
             [exec_name],
             None,
@@ -80,8 +80,8 @@ def get_profiler(mocker: pytest_mock.MockerFixture, monkeypatch: pytest.MonkeyPa
 def get_shellmocked_profiler(mocker: pytest_mock.MockerFixture, tmp_path: Path):
     def _profiler(executables: list[str] | None = None) -> Profiler:
         build = general.Build(
-            general.MachineInfo(general.Arch.X86, None, None),
-            general.MachineInfo(general.Arch.X86, None, None),
+            general.MachineInfo(general.Arch.X86, None, None, None),
+            general.MachineInfo(general.Arch.X86, None, None, None),
             "test_build",
             executables or [EXECUTABLE_FILENAME],
             None,
@@ -549,3 +549,42 @@ class TestProfiler:
 
         assert run.call_args_list[0].args == ("rm /tmp/a",)
         assert run.call_args_list[1].args == ("rm /tmp/b",)
+
+    def test_resolve_events_cli_wins_over_config(self, get_shellmocked_profiler):
+        profiler: Profiler = get_shellmocked_profiler()
+        profiler.build.run_machine.events = ["cache-misses"]
+
+        assert profiler._resolve_events(["cycles"]) == ["cycles"]
+
+    def test_resolve_events_falls_back_to_machine_config(
+        self, get_shellmocked_profiler
+    ):
+        profiler: Profiler = get_shellmocked_profiler()
+        profiler.build.run_machine.events = ["cycles", "instructions"]
+
+        assert profiler._resolve_events(None) == ["cycles", "instructions"]
+
+    def test_resolve_events_normalizes_string_config(self, get_shellmocked_profiler):
+        profiler: Profiler = get_shellmocked_profiler()
+        profiler.build.run_machine.events = "cycles cache-misses"
+
+        assert profiler._resolve_events(None) == ["cycles", "cache-misses"]
+
+    def test_resolve_events_arch_defaults(self, get_shellmocked_profiler):
+        profiler: Profiler = get_shellmocked_profiler()
+        profiler.build.run_machine.events = None
+        profiler.build.run_machine.arch = general.Arch.X86
+
+        assert profiler._resolve_events(None) == [
+            "cycles",
+            "cache-misses",
+            "branch-misses",
+        ]
+
+        profiler.build.run_machine.arch = general.Arch.RISCV
+
+        assert profiler._resolve_events(None) == [
+            "cpu-clock",
+            "cache-misses",
+            "branch-misses",
+        ]
